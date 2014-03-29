@@ -9,7 +9,7 @@ using System.Runtime.Remoting.Channels;
 
 namespace PADI_DSTM {
     namespace MasterServer {
-        class Master : MarshalByRefObject, IMasterServer, IDataServer {
+        class Master : MarshalByRefObject, IMasterServer {
 
             private class DataServerInfo {
 
@@ -56,7 +56,7 @@ namespace PADI_DSTM {
                 // Round Robin:
                 indexLastServer = (indexLastServer + 1) % dataServers.Count;
 
-                IPadInt obj = dServer.getRemoteServer().createPadInt(uid);
+                IPadInt obj = dServer.getRemoteServer().store(uid);
                 
                 // register channel
                 //ChannelServices.RegisterChannel(new TcpChannel(/* ?? */), false); // ?
@@ -77,10 +77,10 @@ namespace PADI_DSTM {
 
             public IPadInt AccessPadInt(int uid) {
                 if (padInts.Contains(uid)) {
-                    //String url = "tcp://localhost:" + padInts[uid].getURL() + "/IDataServer";
-                    //IDataServer remoteServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
-                    //return remoteServer.AccessPadInt(uid);
-                    return ((DataServerInfo)padInts[uid]).getRemoteServer().AccessPadInt(uid);
+                    DataServerInfo serverInfo = (DataServerInfo) padInts[uid];
+                    String url = "tcp://localhost:" + serverInfo.getURL() + "/IDataServer";
+                    IDataServer remoteServer = (IDataServer) Activator.GetObject(typeof(IDataServer), url);
+                    return remoteServer.load(uid);
                 } else {
                     return null;
                 }

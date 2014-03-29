@@ -6,19 +6,20 @@ using System.Threading.Tasks;
 
 namespace PADI_DSTM
 {
-    interface IPadInt {
+    public interface IPadInt {
         int Read();
         void Write(int value);
     }
 
-    interface IMasterServer
+    public interface IMasterServer
     {
         IPadInt CreatePadInt(int uid);
         IPadInt AccessPadInt(int uid);
     }
 
-    interface IDataServer
+    public interface IDataServer
     {
-    
+        IPadInt store(int uid);
+        IPadInt load(int uid);
     }
 }
