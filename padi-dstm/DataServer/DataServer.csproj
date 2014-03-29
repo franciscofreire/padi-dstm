@@ -62,9 +62,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Library\Library.csproj">
-      <Project>{F9C8D0FE-51FE-4ACC-B9FC-F424B56258BF}</Project>
-      <Name>Library</Name>
+    <ProjectReference Include="..\CommonTypes\CommonTypes.csproj">
+      <Project>{c9156a5c-e4bb-4bd2-a047-d60e46b9d014}</Project>
+      <Name>CommonTypes</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

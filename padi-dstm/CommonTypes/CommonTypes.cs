@@ -17,7 +17,7 @@ namespace PADI_DSTM
         IPadInt AccessPadInt(int uid);
     }
 
-    interface IMasterServer
+    interface IDataServer
     {
     
     }
