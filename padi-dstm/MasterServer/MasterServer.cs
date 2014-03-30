@@ -16,9 +16,9 @@ namespace PADI_DSTM {
                 private IDataServer _myRemoteServer;
                 private String _myURL;
 
-                public DataServerInfo(IDataServer remoteServer, String url){
-                    _myRemoteServer = remoteServer;
+                public DataServerInfo(String url, IDataServer remoteServer){
                     _myURL = url;
+                    _myRemoteServer = remoteServer;
                 }
 
                 public IDataServer getRemoteServer(){
@@ -34,6 +34,10 @@ namespace PADI_DSTM {
 
             // Hashtable with information regarding objects' location
             private Hashtable padInts = new Hashtable();
+
+            // Hashtable - cache of PadInts
+            private Hashtable padIntsCache = new Hashtable();
+
 
             // ArrayList of Data Servers
             private ArrayList dataServers = new ArrayList();
@@ -67,7 +71,8 @@ namespace PADI_DSTM {
                 //IPadInt obj = remoteServer.CreatePadInt(uid);
                 
                 if (!padInts.Contains(uid)) {
-                    padInts.Add(uid, dServer);             
+                    padInts.Add(uid, dServer);
+                    padIntsCache.Add(uid, obj);
                     return obj;
                 } else {
                     return null;
@@ -75,24 +80,47 @@ namespace PADI_DSTM {
             }
 
 
-            public IPadInt AccessPadInt(int uid) {
-                if (padInts.Contains(uid)) {
-                    DataServerInfo serverInfo = (DataServerInfo) padInts[uid];
-                    String url = "tcp://localhost:" + serverInfo.getURL() + "/IDataServer";
-                    IDataServer remoteServer = (IDataServer) Activator.GetObject(typeof(IDataServer), url);
-                    return remoteServer.load(uid);
-                } else {
-                    return null;
+            // Se a cache contem o PadInt
+            //  retornamos PadInt
+            // Caso contrario
+            //  retornamos url
+            public void AccessPadInt(String client, int uid) {
+                IClient clientRef = (IClient)Activator.GetObject(typeof(IClient), client);
+                
+                if (padIntsCache.Contains(uid)) {
+                    IPadInt obj = (IPadInt) padIntsCache[uid];
+                    clientRef.sendPadInt(uid, obj);
+                } else if (padInts.Contains(uid)) {
+                    DataServerInfo dServer = (DataServerInfo) padInts[uid];
+                    clientRef.sendUrl(uid, dServer.getURL());
                 }
             }
 
+            public void registerServer(String url) {
+                foreach (DataServerInfo server in dataServers) {
+                    if (server.getURL().Equals(url))
+                        return;
+                }
+                IDataServer remoteServer = (IDataServer) Activator.GetObject(typeof(IDataServer), url);
+                DataServerInfo serverInfo = new DataServerInfo(url, remoteServer);
+                dataServers.Add(serverInfo);
+                Console.WriteLine("Server " + url + " registered");
+            }
+        
+        
         }
 
         class Program {
             static void Main(string[] args) {
-                // TODO: Master must register his remote reference
+                TcpChannel channel = new TcpChannel(9999);
+                ChannelServices.RegisterChannel(channel, true);
 
-                // TODO: Master must receive DataServers data on their regist
+                Master master = new Master();
+
+                RemotingServices.Marshal(master, "MasterServer", typeof(IMasterServer));
+
+                System.Console.WriteLine("Started Master Server...");
+                System.Console.ReadKey();
             }
         }
     }

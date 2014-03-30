@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Remoting.Channels;
 
 namespace PADI_DSTM {
     namespace DataServer {
@@ -76,7 +79,38 @@ namespace PADI_DSTM {
 
 
         class Program {
+
+            // Como identificar um server
+            // Variar endpoint, porta ou ambos?
             static void Main(string[] args) {
+                int port = 9995;
+                TcpChannel channel = new TcpChannel(port);
+                ChannelServices.RegisterChannel(channel, true);
+
+                Server server = new Server();
+
+                RemotingServices.Marshal(server, "DataServer", typeof(IDataServer));
+
+                System.Console.WriteLine("Started Data Server1...");
+
+                String url = "tcp://localhost:" + port + "/DataServer";
+
+                String urlMaster = "tcp://localhost:9999/MasterServer";
+                IMasterServer masterServer = (IMasterServer) Activator.GetObject(typeof(IMasterServer), urlMaster);
+
+                masterServer.registerServer(url);
+
+                Server server2 = new Server();
+
+                RemotingServices.Marshal(server2, "DataServer2", typeof(IDataServer));
+
+                String url2 = "tcp://localhost:" + port + "/DataServer2";
+
+                System.Console.WriteLine("Started Data Server2...");
+
+                masterServer.registerServer(url2);
+
+                System.Console.ReadKey();
             }
         }
     }

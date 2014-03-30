@@ -14,7 +14,8 @@ namespace PADI_DSTM
     public interface IMasterServer
     {
         IPadInt CreatePadInt(int uid);
-        IPadInt AccessPadInt(int uid);
+        void AccessPadInt(String client, int uid);
+        void registerServer(String url);
     }
 
     public interface IDataServer
@@ -22,4 +23,10 @@ namespace PADI_DSTM
         IPadInt store(int uid);
         IPadInt load(int uid);
     }
+
+    public interface IClient {
+        void sendUrl(int uid, String url);
+        void sendPadInt(int uid, IPadInt padint);
+    }
+
 }
