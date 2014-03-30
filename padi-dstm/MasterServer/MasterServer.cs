@@ -29,14 +29,48 @@ namespace PADI_DSTM {
                     return _myURL;
                 }
             }
-            
 
+            private class MyPadInt {
+                private int uid;
+                private IPadInt padInt;
+
+                
+                public int Uid {
+                    get { return uid; }
+                    set { uid = value; }
+                }
+
+                public IPadInt PadInt {
+                    get { return padInt; }
+                    set { padInt = value; }
+                }
+
+                public override bool Equals(Object obj) {
+                    if (obj == null || GetType() != obj.GetType())
+                        return false;
+
+                    MyPadInt p = (MyPadInt)obj;
+                    return (this.Uid == p.Uid);
+                }
+                public override int GetHashCode() {
+                    return uid;
+                }
+
+                public MyPadInt(int uid, IPadInt obj) {
+                    this.uid = uid;
+                    this.padInt = obj;
+                }
+
+            }
+
+
+            private const int CACHE_SIZE = 20;
 
             // Hashtable with information regarding objects' location
             private Hashtable padInts = new Hashtable();
 
             // Hashtable - cache of PadInts
-            private Hashtable padIntsCache = new Hashtable();
+            private ArrayList padIntsCache = new ArrayList();
 
 
             // ArrayList of Data Servers
@@ -48,6 +82,18 @@ namespace PADI_DSTM {
             
             // Queue with the Data Server, for the Round Robin algorithm
             //private Queue roundRobin = new Queue();
+
+
+            private void addPadInt(MyPadInt obj)
+            {
+                int size = padIntsCache.Count;
+
+                if (size == CACHE_SIZE) {
+                    // remove the oldest entry
+                    padIntsCache.RemoveAt(0);
+                }
+                padIntsCache.Add(obj);
+            }
 
 
             public IPadInt CreatePadInt(int uid) {
@@ -72,7 +118,8 @@ namespace PADI_DSTM {
                 
                 if (!padInts.Contains(uid)) {
                     padInts.Add(uid, dServer);
-                    padIntsCache.Add(uid, obj);
+                    MyPadInt myPadInt = new MyPadInt(uid, obj);
+                    addPadInt(myPadInt);
                     return obj;
                 } else {
                     return null;
