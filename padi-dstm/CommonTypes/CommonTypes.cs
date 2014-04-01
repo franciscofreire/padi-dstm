@@ -11,10 +11,45 @@ namespace PADI_DSTM
         void Write(int value);
     }
 
+    [Serializable]
+    public class PadIntInfo {
+        private IPadInt padInt;
+        private String serverUrl;
+
+        public IPadInt PadInt {
+            get { return padInt; }
+            set { padInt = value; }
+        }
+
+        public String ServerUrl {
+            get { return serverUrl; }
+            set { serverUrl = value; }
+        }
+
+        public PadIntInfo(IPadInt padInt) {
+            this.padInt = padInt;
+            this.serverUrl = null;
+        }
+
+        public PadIntInfo(String serverUrl) {
+            this.serverUrl = serverUrl;
+            this.serverUrl = null;
+        }
+
+        public bool hasPadInt() {
+            return padInt != null;
+        }
+
+        public bool hasServerUrl() {
+            return serverUrl != null;
+        }
+    }
+
+
     public interface IMasterServer
     {
         IPadInt CreatePadInt(int uid);
-        void AccessPadInt(String client, int uid);
+        PadIntInfo AccessPadInt(String client, int uid);
         void registerServer(String url);
     }
 
@@ -25,8 +60,8 @@ namespace PADI_DSTM
     }
 
     public interface IClient {
-        void sendUrl(int uid, String url);
-        void sendPadInt(int uid, IPadInt padint);
+
     }
+
 
 }

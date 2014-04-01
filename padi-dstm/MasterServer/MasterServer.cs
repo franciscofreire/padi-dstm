@@ -30,6 +30,8 @@ namespace PADI_DSTM {
                 }
             }
 
+
+            // Para associar PadInt com Id (usado para a cache)
             private class MyPadInt {
                 private int uid;
                 private IPadInt padInt;
@@ -80,16 +82,12 @@ namespace PADI_DSTM {
             private int indexLastServer = 0;
             // ATENÇÃO!!! Quando se perde/remove um DataServer, precisa de correcão (-1?)
             
-            // Queue with the Data Server, for the Round Robin algorithm
-            //private Queue roundRobin = new Queue();
-
-
             private void addPadInt(MyPadInt obj)
             {
                 int size = padIntsCache.Count;
 
                 if (size == CACHE_SIZE) {
-                    // remove the oldest entry
+                    // remover o PadInt mais antigo
                     padIntsCache.RemoveAt(0);
                 }
                 padIntsCache.Add(obj);
@@ -97,9 +95,7 @@ namespace PADI_DSTM {
 
 
             public IPadInt CreatePadInt(int uid) {
-                // Round Robin:
-                //DataServer dataServer = roundRobin.Dequeue(); // Retira do topo
-                //roundRobin.Queue(dataServer); // Coloca no fim
+                Console.WriteLine("Client wants to create PadInt with id " + uid);
 
                 DataServerInfo dServer = (DataServerInfo) dataServers[indexLastServer];
                 
@@ -107,14 +103,6 @@ namespace PADI_DSTM {
                 indexLastServer = (indexLastServer + 1) % dataServers.Count;
 
                 IPadInt obj = dServer.getRemoteServer().store(uid);
-                
-                // register channel
-                //ChannelServices.RegisterChannel(new TcpChannel(/* ?? */), false); // ?
-
-                // retrieve remote server proxy
-                //String url = "tcp://localhost:" + dServer.getURL() + "/IDataServer";
-                //IDataServer remoteServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
-                //IPadInt obj = remoteServer.CreatePadInt(uid);
                 
                 if (!padInts.Contains(uid)) {
                     padInts.Add(uid, dServer);
@@ -131,15 +119,22 @@ namespace PADI_DSTM {
             //  retornamos PadInt
             // Caso contrario
             //  retornamos url
-            public void AccessPadInt(String client, int uid) {
-                IClient clientRef = (IClient)Activator.GetObject(typeof(IClient), client);
-                
+            public PadIntInfo AccessPadInt(String client, int uid) {
+                Console.WriteLine("Client " + client);
+                Console.WriteLine("Requests PadInt with id " + uid);
+
                 if (padIntsCache.Contains(uid)) {
                     IPadInt obj = (IPadInt) padIntsCache[uid];
-                    clientRef.sendPadInt(uid, obj);
-                } else if (padInts.Contains(uid)) {
-                    DataServerInfo dServer = (DataServerInfo) padInts[uid];
-                    clientRef.sendUrl(uid, dServer.getURL());
+                    PadIntInfo padIntInfo = new PadIntInfo(obj);
+                    return padIntInfo;
+                }
+                else if (padInts.Contains(uid)) {
+                    DataServerInfo dServer = (DataServerInfo)padInts[uid];
+                    PadIntInfo padIntInfo = new PadIntInfo(dServer.getURL());
+                    return padIntInfo;
+                }
+                else { //PadInt nao existe
+                    return null;
                 }
             }
 
@@ -148,6 +143,7 @@ namespace PADI_DSTM {
                     if (server.getURL().Equals(url))
                         return;
                 }
+                // obter referencia remota e registar servidor
                 IDataServer remoteServer = (IDataServer) Activator.GetObject(typeof(IDataServer), url);
                 DataServerInfo serverInfo = new DataServerInfo(url, remoteServer);
                 dataServers.Add(serverInfo);
@@ -160,7 +156,7 @@ namespace PADI_DSTM {
         class Program {
             static void Main(string[] args) {
                 TcpChannel channel = new TcpChannel(9999);
-                ChannelServices.RegisterChannel(channel, true);
+                ChannelServices.RegisterChannel(channel, false);
 
                 Master master = new Master();
 
