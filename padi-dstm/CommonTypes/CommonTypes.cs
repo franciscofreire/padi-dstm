@@ -51,6 +51,7 @@ namespace PADI_DSTM
         IPadInt CreatePadInt(int uid);
         PadIntInfo AccessPadInt(String client, int uid);
         void registerServer(String url);
+        void registerClient(String url);
     }
 
     public interface IDataServer

@@ -30,6 +30,31 @@ namespace PADI_DSTM {
                 }
             }
 
+            private class ClientInfo {
+
+                private IClient _myRemoteClient;
+                private String _myURL;
+
+                public ClientInfo(String url, IClient remoteClient) {
+                    _myURL = url;
+                    _myRemoteClient = remoteClient;
+                }
+
+                public IClient RemoteServer {
+                    get { return _myRemoteClient; }
+                    set { _myRemoteClient = value; }
+                }
+
+                public String URL {
+                    get { return _myURL; }
+                    set { _myURL = value; }
+                }
+            }
+
+
+
+
+
 
             // Para associar PadInt com Id (usado para a cache)
             private class MyPadInt {
@@ -74,9 +99,11 @@ namespace PADI_DSTM {
             // Hashtable - cache of PadInts
             private ArrayList padIntsCache = new ArrayList();
 
-
             // ArrayList of Data Servers
             private ArrayList dataServers = new ArrayList();
+
+            //ArrayList of Clients
+            private ArrayList clients = new ArrayList();
 
             // Index for RoundRobin
             private int indexLastServer = 0;
@@ -149,7 +176,18 @@ namespace PADI_DSTM {
                 dataServers.Add(serverInfo);
                 Console.WriteLine("Server " + url + " registered");
             }
-        
+
+            public void registerClient(String url) {
+                foreach (ClientInfo client in clients) {
+                    if (client.URL.Equals(url))
+                        return;
+                }
+                // obter referencia remota e registar cliente
+                IClient remoteClient = (IClient)Activator.GetObject(typeof(IClient), url);
+                ClientInfo clientInfo = new ClientInfo(url, remoteClient);
+                clients.Add(clientInfo);
+                Console.WriteLine("Client " + url + " registered");
+            }
         
         }
 

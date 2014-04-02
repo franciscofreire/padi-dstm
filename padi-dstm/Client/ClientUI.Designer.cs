@@ -36,7 +36,7 @@
                 this.label1 = new System.Windows.Forms.Label();
                 this.label2 = new System.Windows.Forms.Label();
                 this.createTextBox = new System.Windows.Forms.TextBox();
-                this.accessTextBox1 = new System.Windows.Forms.TextBox();
+                this.accessTextBox = new System.Windows.Forms.TextBox();
                 this.failTextBox = new System.Windows.Forms.TextBox();
                 this.failButton = new System.Windows.Forms.Button();
                 this.label3 = new System.Windows.Forms.Label();
@@ -75,7 +75,7 @@
                 this.tableLayoutPanel1.Controls.Add(this.label1, 4, 0);
                 this.tableLayoutPanel1.Controls.Add(this.label2, 4, 1);
                 this.tableLayoutPanel1.Controls.Add(this.createTextBox, 5, 0);
-                this.tableLayoutPanel1.Controls.Add(this.accessTextBox1, 5, 1);
+                this.tableLayoutPanel1.Controls.Add(this.accessTextBox, 5, 1);
                 this.tableLayoutPanel1.Controls.Add(this.failTextBox, 5, 6);
                 this.tableLayoutPanel1.Controls.Add(this.failButton, 3, 6);
                 this.tableLayoutPanel1.Controls.Add(this.label3, 4, 6);
@@ -127,6 +127,7 @@
                 this.createButton.TabIndex = 0;
                 this.createButton.Text = "Create PadInt";
                 this.createButton.UseVisualStyleBackColor = true;
+                this.createButton.Click += new System.EventHandler(this.createButton_Click);
                 // 
                 // accessButton
                 // 
@@ -137,6 +138,7 @@
                 this.accessButton.TabIndex = 1;
                 this.accessButton.Text = "Access PadInt";
                 this.accessButton.UseVisualStyleBackColor = true;
+                this.accessButton.Click += new System.EventHandler(this.accessButton_Click);
                 // 
                 // label1
                 // 
@@ -169,14 +171,14 @@
                 this.createTextBox.Size = new System.Drawing.Size(281, 26);
                 this.createTextBox.TabIndex = 4;
                 // 
-                // accessTextBox1
+                // accessTextBox
                 // 
-                this.accessTextBox1.Dock = System.Windows.Forms.DockStyle.Fill;
-                this.accessTextBox1.Location = new System.Drawing.Point(298, 35);
-                this.accessTextBox1.Multiline = true;
-                this.accessTextBox1.Name = "accessTextBox1";
-                this.accessTextBox1.Size = new System.Drawing.Size(281, 26);
-                this.accessTextBox1.TabIndex = 5;
+                this.accessTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+                this.accessTextBox.Location = new System.Drawing.Point(298, 35);
+                this.accessTextBox.Multiline = true;
+                this.accessTextBox.Name = "accessTextBox";
+                this.accessTextBox.Size = new System.Drawing.Size(281, 26);
+                this.accessTextBox.TabIndex = 5;
                 // 
                 // failTextBox
                 // 
@@ -408,7 +410,7 @@
             private System.Windows.Forms.Label label1;
             private System.Windows.Forms.Label label2;
             private System.Windows.Forms.TextBox createTextBox;
-            private System.Windows.Forms.TextBox accessTextBox1;
+            private System.Windows.Forms.TextBox accessTextBox;
             private System.Windows.Forms.TextBox failTextBox;
             private System.Windows.Forms.Button txCommitButton;
             private System.Windows.Forms.Button txAbortButton;
