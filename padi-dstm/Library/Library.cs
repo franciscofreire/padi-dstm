@@ -10,10 +10,15 @@ namespace PADI_DSTM
 {
     public class Library  {
 
+        // Delegates for Form's TextBox manipulation
         delegate void ClearTextDel();
         delegate void UpdateTextDel(String msg);
 
+        // TextBox to dump status
         private TextBox _statusBox;
+
+        // MasterServer remote object
+        private IMasterServer _masterServer;
 
         public Library(TextBox box) {
             _statusBox = box;
@@ -21,6 +26,8 @@ namespace PADI_DSTM
 
         public bool Init() {  //public?
         //TODO
+            String urlMaster = "tcp://localhost:9999/MasterServer";
+            _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
             return false;
         }
 
@@ -39,18 +46,35 @@ namespace PADI_DSTM
             return false;
         }
 
-        public bool Status() {
 
+
+
+        public IPadInt CreatePadInt (int uid) {
+           return _masterServer.CreatePadInt(uid);
+        }
+
+        public IPadInt AccessPadInt(int uid) {
+            PadIntInfo obj = _masterServer.AccessPadInt("client1", uid);
+            if (!obj.hasPadInt()) {
+                IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
+                return dataServer.load(uid);
+            } else {
+                return obj.PadInt;
+            }
+        }
+
+
+
+
+
+        public bool Status() {
             // limpa janela do status das cacas anteriores:
             _statusBox.Invoke(new ClearTextDel(_statusBox.Clear));
            
-            String urlMaster = "tcp://localhost:9999/MasterServer";
-            IMasterServer masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
-
-            String line = masterServer.Status() + "\r\n";
+            String line = _masterServer.Status() + "\r\n";
             _statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
 
-            Hashtable results = masterServer.propagateStatus();
+            Hashtable results = _masterServer.propagateStatus();
 
             foreach (DictionaryEntry s in results) {
                 String text = "Node " + s.Key + " is set to " + s.Value + " Mode.";
@@ -58,7 +82,6 @@ namespace PADI_DSTM
                 line = text + "\r\n";
                 _statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
             }
-
             return false; // ?
         }
         

@@ -22,7 +22,6 @@ namespace PADI_DSTM
                 Application.SetCompatibleTextRenderingDefault(false);
                 Application.Run(new Form1());
 
-                
                 int port = 9990;
                 TcpChannel channel = new TcpChannel(port);
                 ChannelServices.RegisterChannel(channel, true);
@@ -33,8 +32,6 @@ namespace PADI_DSTM
                 String urlMaster = "tcp://localhost:9999/MasterServer";
                 IMasterServer masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
                 masterServer.registerClient(url);
-                
-
             }
         }
     }

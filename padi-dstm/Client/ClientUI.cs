@@ -22,31 +22,17 @@ namespace PADI_DSTM
                 InitializeComponent();
             }
 
-            private void createButton_Click(object sender, EventArgs e) {
-                String urlMaster = "tcp://localhost:9999/MasterServer";
-                IMasterServer masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
-               
-                IPadInt obj = masterServer.CreatePadInt(Convert.ToInt32(createTextBox.Text));
-                //guarda o newObj ?
-
-            }
-
-            private void accessButton_Click(object sender, EventArgs e) {
-                String urlMaster = "tcp://localhost:9999/MasterServer";
-                IMasterServer masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
-                
-                PadIntInfo obj = masterServer.AccessPadInt("client1", Convert.ToInt32(accessTextBox.Text));
-
-                if (! obj.hasPadInt()) {
-                    IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
-                    IPadInt newObj = dataServer.load(Convert.ToInt32(accessTextBox.Text));
-                    _accessedObj = newObj; //guarda o objecto para futuras manipulações
-                }
-            }
-
             private void initButton_Click(object sender, EventArgs e) {
                 _lib = new Library(statusTextBox);
                 _lib.Init();
+            }
+
+            private void createButton_Click(object sender, EventArgs e) {
+                _accessedObj = _lib.CreatePadInt(Convert.ToInt32(createTextBox.Text)); 
+            }
+
+            private void accessButton_Click(object sender, EventArgs e) {
+                _accessedObj = _lib.AccessPadInt(Convert.ToInt32(accessTextBox.Text));
             }
 
             private void txBeginButton_Click(object sender, EventArgs e) {
