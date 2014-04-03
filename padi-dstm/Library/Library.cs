@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +8,7 @@ using System.Text;
 
 namespace PADI_DSTM
 {
-    public class Library : IDataServer {
+    public class Library  {
 
         delegate void ClearTextDel();
         delegate void UpdateTextDel(String msg);
@@ -39,25 +40,24 @@ namespace PADI_DSTM
         }
 
         public bool Status() {
-            //TODO
-            
-            //IMasterServer masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster), 
-            //IDataServer dataServer1 = (IDataServer)Activator.GetObject(typeof(IDataServer), urlDServer1);
-            //IDataServer dataServer2 = (IDataServer)Activator.GetObject(typeof(IDataServer), urlDServer2);
-            // ...
-            // fazer os servidores registarem-se com a library tambem?
-            // e Library mantem um arrayList com os nodes?
 
             // limpa janela do status das cacas anteriores:
             _statusBox.Invoke(new ClearTextDel(_statusBox.Clear));
-            
+           
+            String urlMaster = "tcp://localhost:9999/MasterServer";
+            IMasterServer masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
 
-            //foreach ( server in nodes ) {
-                //String text = "Node " + server.name + " is set to " + server.Status() + " Mode.";
-                //Console.WriteLine(text);
-                //String line = text + "\r\n";
-                //_statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
-            //}
+            String line = masterServer.Status() + "\r\n";
+            _statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
+
+            Hashtable results = masterServer.propagateStatus();
+
+            foreach (DictionaryEntry s in results) {
+                String text = "Node " + s.Key + " is set to " + s.Value + " Mode.";
+                Console.WriteLine(text);
+                line = text + "\r\n";
+                _statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
+            }
 
             return false; // ?
         }

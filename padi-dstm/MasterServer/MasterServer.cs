@@ -21,12 +21,22 @@ namespace PADI_DSTM {
                     _myRemoteServer = remoteServer;
                 }
 
-                public IDataServer getRemoteServer(){
-                    return _myRemoteServer;
+                public IDataServer remoteServer{
+                    get {
+                        return _myRemoteServer;
+                    }
+                    set {
+                        _myRemoteServer = value;
+                    }
                 }
 
-                public String getURL(){
-                    return _myURL;
+                public String URL{
+                    get {
+                        return _myURL;
+                    }
+                    set {
+                        _myURL = value;
+                    }
                 }
             }
 
@@ -134,7 +144,7 @@ namespace PADI_DSTM {
                 // Round Robin:
                 indexLastServer = (indexLastServer + 1) % dataServers.Count;
 
-                IPadInt obj = dServer.getRemoteServer().store(uid);
+                IPadInt obj = dServer.remoteServer.store(uid);
                 
                 if (!padInts.Contains(uid)) {
                     padInts.Add(uid, dServer);
@@ -164,7 +174,7 @@ namespace PADI_DSTM {
                 }
                 else if (padInts.Contains(uid)) {
                     DataServerInfo dServer = (DataServerInfo)padInts[uid];
-                    PadIntInfo padIntInfo = new PadIntInfo(dServer.getURL());
+                    PadIntInfo padIntInfo = new PadIntInfo(dServer.URL);
                     return padIntInfo;
                 }
                 else { //PadInt nao existe
@@ -174,13 +184,14 @@ namespace PADI_DSTM {
 
             public void registerServer(String url) {
                 foreach (DataServerInfo server in dataServers) {
-                    if (server.getURL().Equals(url))
+                    if (server.URL.Equals(url))
                         return;
                 }
                 // obter referencia remota e registar servidor
                 IDataServer remoteServer = (IDataServer) Activator.GetObject(typeof(IDataServer), url);
                 DataServerInfo serverInfo = new DataServerInfo(url, remoteServer);
                 dataServers.Add(serverInfo);
+
                 Console.WriteLine("Server " + url + " registered");
             }
 
@@ -195,6 +206,22 @@ namespace PADI_DSTM {
                 clients.Add(clientInfo);
                 Console.WriteLine("Client " + url + " registered");
             }
+
+
+
+
+            public Hashtable propagateStatus() {
+                String serverName, serverStatus;
+                Hashtable results = new Hashtable();
+                foreach(DataServerInfo server in dataServers){
+                    serverName = server.remoteServer.name;
+                    serverStatus = server.remoteServer.Status();
+                    results.Add(serverName, serverStatus);
+                }
+                return results;
+            }
+
+
         
         }
 

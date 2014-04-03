@@ -26,6 +26,7 @@ namespace PADI_DSTM
                 IMasterServer masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
                
                 IPadInt obj = masterServer.CreatePadInt(Convert.ToInt32(createTextBox.Text));
+                //guarda o newObj ?
 
             }
 
@@ -35,6 +36,11 @@ namespace PADI_DSTM
                 
                 PadIntInfo obj = masterServer.AccessPadInt("client1", Convert.ToInt32(accessTextBox.Text));
 
+                if (! obj.hasPadInt()) {
+                    IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
+                    IPadInt newObj = dataServer.load(Convert.ToInt32(accessTextBox.Text));
+                    //guarda o newObj ?
+                }
             }
 
             private void initButton_Click(object sender, EventArgs e) {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -52,6 +53,7 @@ namespace PADI_DSTM
         PadIntInfo AccessPadInt(String client, int uid);
         void registerServer(String url);
         void registerClient(String url);
+        Hashtable propagateStatus();
         String Status();
     }
 
@@ -59,7 +61,7 @@ namespace PADI_DSTM
     {
         IPadInt store(int uid);
         IPadInt load(int uid);
-        String name();
+        String name{ get; set;}
         bool Fail();
         bool Freeze();
         bool Recover();
