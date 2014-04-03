@@ -33,7 +33,7 @@ namespace PADI_DSTM
 
         public PadIntInfo(String serverUrl) {
             this.serverUrl = serverUrl;
-            this.serverUrl = null;
+            this.padInt = null;
         }
 
         public bool hasPadInt() {
