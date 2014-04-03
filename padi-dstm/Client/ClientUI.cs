@@ -15,6 +15,7 @@ namespace PADI_DSTM
         {
 
             private Library _lib;
+            private IPadInt _accessedObj; // falta integrar com transacções
 
             public Form1()
             {
@@ -39,7 +40,7 @@ namespace PADI_DSTM
                 if (! obj.hasPadInt()) {
                     IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
                     IPadInt newObj = dataServer.load(Convert.ToInt32(accessTextBox.Text));
-                    //guarda o newObj ?
+                    _accessedObj = newObj; //guarda o objecto para futuras manipulações
                 }
             }
 
@@ -79,6 +80,17 @@ namespace PADI_DSTM
             private void statusButton_Click(object sender, EventArgs e)
             {
                 _lib.Status();
+            }
+
+            private void readButton_Click(object sender, EventArgs e) {
+                // falta integrar com transacções
+                int value = _accessedObj.Read();
+                readTextBox.Text = value.ToString();
+            }
+
+            private void writeButton_Click(object sender, EventArgs e) {
+                // falta integrar com transacções
+                _accessedObj.Write(Convert.ToInt32(writeTextBox.Text));
             }
 
 

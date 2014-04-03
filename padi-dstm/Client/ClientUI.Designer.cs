@@ -355,6 +355,7 @@
                 this.readButton.TabIndex = 21;
                 this.readButton.Text = "Read";
                 this.readButton.UseVisualStyleBackColor = true;
+                this.readButton.Click += new System.EventHandler(this.readButton_Click);
                 // 
                 // writeButton
                 // 
@@ -365,6 +366,7 @@
                 this.writeButton.TabIndex = 22;
                 this.writeButton.Text = "Write";
                 this.writeButton.UseVisualStyleBackColor = true;
+                this.writeButton.Click += new System.EventHandler(this.writeButton_Click);
                 // 
                 // label6
                 // 
