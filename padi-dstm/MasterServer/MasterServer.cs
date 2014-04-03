@@ -201,7 +201,7 @@ namespace PADI_DSTM {
         class Program {
             static void Main(string[] args) {
                 TcpChannel channel = new TcpChannel(9999);
-                ChannelServices.RegisterChannel(channel, false);
+                ChannelServices.RegisterChannel(channel, true);
 
                 Master master = new Master();
 
