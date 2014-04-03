@@ -58,22 +58,105 @@ namespace PADI_DSTM {
         }
 
         class Server : MarshalByRefObject, IDataServer {
+
+            private bool _isFail;
+            private bool _isFreeze;
+            private String _name;
+
             private Hashtable padInts = new Hashtable();
 
-            public IPadInt store(int uid) {
-                if (!padInts.Contains(uid)) {
-                    PadInt obj = new PadInt();
-                    padInts.Add(uid, obj);
-                    return obj;
-                }
-                return null;
+            // TODO: I need to have a log, for Freeze+Recover commands!!!
+
+            public Server(String name) {
+                _name = name;
+                _isFail = false;
+                _isFreeze = false;
             }
 
-            public IPadInt load(int uid) {
-                if (padInts.Contains(uid)) {
-                    return (IPadInt) padInts[uid];
+            public String name {
+                get { return _name; }
+                set { _name = value; }
+            }
+
+            public bool isFail {
+                get { return _isFail; }
+                set { _isFail = value; }
+            }
+
+            public bool isFreeze {
+                get { return _isFreeze; }
+                set { _isFreeze = value; }
+            }
+
+            public bool Freeze() {
+                isFreeze = true;
+                return true;
+            }
+
+            public bool Fail() {
+                isFail = true;
+                return true;
+            }
+
+            public bool Recover() {
+                if (isFail) {
+                    isFail = false;
+                    return true;
+                } else if (isFreeze) {
+                    isFreeze = false;
+                    // TODO: Read and dispatch logged requests
+                    return true;
+                } else {
+                    return false;
                 }
-                return null;
+            }
+
+            public String Status() {
+                if (isFail) {
+                    return "[Fail]";
+                } else if (isFreeze) {
+                    return "[Freeze]";
+                } else {
+                    return "[OK]";
+                }
+            }
+
+
+            public IPadInt store(int uid) {
+                if (isFail) {
+                    Console.WriteLine("DataServer " + name + " is set to Fail Mode!");
+                    return null;
+
+                } else if (isFreeze) {
+                    Console.WriteLine("DataServer " + name + " is set to Freeze Mode!");
+                    return null;
+
+                } else {
+                    if (!padInts.Contains(uid)) {
+                        PadInt obj = new PadInt();
+                        padInts.Add(uid, obj);
+                        return obj;
+                    }
+                    return null;
+                }
+            }
+
+
+            public IPadInt load(int uid) {
+                if (isFail) {
+                    Console.WriteLine("DataServer " + name + " is set to Fail Mode!");
+                    return null;
+
+                } else if (isFreeze) {
+                    Console.WriteLine("DataServer " + name + " is set to Freeze Mode!");
+                    return null;
+
+                } else {
+                    if (padInts.Contains(uid)) {
+                        return (IPadInt)padInts[uid];
+                    }
+                    return null;
+                }
             }
         }
 
@@ -87,27 +170,22 @@ namespace PADI_DSTM {
                 TcpChannel channel = new TcpChannel(port);
                 ChannelServices.RegisterChannel(channel, true);
 
-                Server server = new Server();
+                String name1 = "DataServer1";
+                String name2 = "DataServer2";
 
-                RemotingServices.Marshal(server, "DataServer", typeof(IDataServer));
+                Server server = new Server(name1);
+                RemotingServices.Marshal(server, name1, typeof(IDataServer));
+                System.Console.WriteLine("Started " + name1);
+                String url = "tcp://localhost:" + port + "/" + name1;
 
-                System.Console.WriteLine("Started Data Server1...");
-
-                String url = "tcp://localhost:" + port + "/DataServer";
+                Server server2 = new Server(name2);
+                RemotingServices.Marshal(server2, name2, typeof(IDataServer));
+                String url2 = "tcp://localhost:" + port + "/" + name2;
+                System.Console.WriteLine("Started " + name2);
 
                 String urlMaster = "tcp://localhost:9999/MasterServer";
                 IMasterServer masterServer = (IMasterServer) Activator.GetObject(typeof(IMasterServer), urlMaster);
-
                 masterServer.registerServer(url);
-
-                Server server2 = new Server();
-
-                RemotingServices.Marshal(server2, "DataServer2", typeof(IDataServer));
-
-                String url2 = "tcp://localhost:" + port + "/DataServer2";
-
-                System.Console.WriteLine("Started Data Server2...");
-
                 masterServer.registerServer(url2);
 
                 System.Console.ReadKey();

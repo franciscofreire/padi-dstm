@@ -52,12 +52,18 @@ namespace PADI_DSTM
         PadIntInfo AccessPadInt(String client, int uid);
         void registerServer(String url);
         void registerClient(String url);
+        String Status();
     }
 
     public interface IDataServer
     {
         IPadInt store(int uid);
         IPadInt load(int uid);
+        String name();
+        bool Fail();
+        bool Freeze();
+        bool Recover();
+        String Status();
     }
 
     public interface IClient {

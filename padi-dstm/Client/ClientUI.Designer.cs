@@ -51,7 +51,7 @@
                 this.txCommitButton = new System.Windows.Forms.Button();
                 this.txAbortButton = new System.Windows.Forms.Button();
                 this.statusButton = new System.Windows.Forms.Button();
-                this.textBox1 = new System.Windows.Forms.TextBox();
+                this.statusTextBox = new System.Windows.Forms.TextBox();
                 this.readButton = new System.Windows.Forms.Button();
                 this.writeButton = new System.Windows.Forms.Button();
                 this.label6 = new System.Windows.Forms.Label();
@@ -90,7 +90,7 @@
                 this.tableLayoutPanel1.Controls.Add(this.txCommitButton, 0, 4);
                 this.tableLayoutPanel1.Controls.Add(this.txAbortButton, 0, 5);
                 this.tableLayoutPanel1.Controls.Add(this.statusButton, 0, 11);
-                this.tableLayoutPanel1.Controls.Add(this.textBox1, 3, 10);
+                this.tableLayoutPanel1.Controls.Add(this.statusTextBox, 3, 10);
                 this.tableLayoutPanel1.Controls.Add(this.readButton, 3, 3);
                 this.tableLayoutPanel1.Controls.Add(this.writeButton, 3, 4);
                 this.tableLayoutPanel1.Controls.Add(this.label6, 4, 4);
@@ -198,6 +198,7 @@
                 this.failButton.TabIndex = 10;
                 this.failButton.Text = "Fail";
                 this.failButton.UseVisualStyleBackColor = true;
+                this.failButton.Click += new System.EventHandler(this.failButton_Click);
                 // 
                 // label3
                 // 
@@ -219,6 +220,7 @@
                 this.freezeButton.TabIndex = 13;
                 this.freezeButton.Text = "Freeze";
                 this.freezeButton.UseVisualStyleBackColor = true;
+                this.freezeButton.Click += new System.EventHandler(this.freezeButton_Click);
                 // 
                 // label4
                 // 
@@ -249,6 +251,7 @@
                 this.recoverButton.TabIndex = 16;
                 this.recoverButton.Text = "Recover";
                 this.recoverButton.UseVisualStyleBackColor = true;
+                this.recoverButton.Click += new System.EventHandler(this.recoverButton_Click);
                 // 
                 // label5
                 // 
@@ -281,6 +284,7 @@
                 this.initButton.TabIndex = 6;
                 this.initButton.Text = "Init";
                 this.initButton.UseVisualStyleBackColor = true;
+                this.initButton.Click += new System.EventHandler(this.initButton_Click);
                 // 
                 // txBeginButton
                 // 
@@ -292,6 +296,7 @@
                 this.txBeginButton.TabIndex = 7;
                 this.txBeginButton.Text = "TxBegin";
                 this.txBeginButton.UseVisualStyleBackColor = true;
+                this.txBeginButton.Click += new System.EventHandler(this.txBeginButton_Click);
                 // 
                 // txCommitButton
                 // 
@@ -303,6 +308,7 @@
                 this.txCommitButton.TabIndex = 8;
                 this.txCommitButton.Text = "TxCommit";
                 this.txCommitButton.UseVisualStyleBackColor = true;
+                this.txCommitButton.Click += new System.EventHandler(this.txCommitButton_Click);
                 // 
                 // txAbortButton
                 // 
@@ -314,6 +320,7 @@
                 this.txAbortButton.TabIndex = 9;
                 this.txAbortButton.Text = "TxAbort";
                 this.txAbortButton.UseVisualStyleBackColor = true;
+                this.txAbortButton.Click += new System.EventHandler(this.txAbortButton_Click);
                 // 
                 // statusButton
                 // 
@@ -326,17 +333,18 @@
                 this.statusButton.TabIndex = 19;
                 this.statusButton.Text = "Status";
                 this.statusButton.UseVisualStyleBackColor = true;
+                this.statusButton.Click += new System.EventHandler(this.statusButton_Click);
                 // 
-                // textBox1
+                // statusTextBox
                 // 
-                this.tableLayoutPanel1.SetColumnSpan(this.textBox1, 3);
-                this.textBox1.Dock = System.Windows.Forms.DockStyle.Fill;
-                this.textBox1.Location = new System.Drawing.Point(148, 299);
-                this.textBox1.Multiline = true;
-                this.textBox1.Name = "textBox1";
-                this.tableLayoutPanel1.SetRowSpan(this.textBox1, 4);
-                this.textBox1.Size = new System.Drawing.Size(431, 122);
-                this.textBox1.TabIndex = 20;
+                this.tableLayoutPanel1.SetColumnSpan(this.statusTextBox, 3);
+                this.statusTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+                this.statusTextBox.Location = new System.Drawing.Point(148, 299);
+                this.statusTextBox.Multiline = true;
+                this.statusTextBox.Name = "statusTextBox";
+                this.tableLayoutPanel1.SetRowSpan(this.statusTextBox, 4);
+                this.statusTextBox.Size = new System.Drawing.Size(431, 122);
+                this.statusTextBox.TabIndex = 20;
                 // 
                 // readButton
                 // 
@@ -425,7 +433,7 @@
             private System.Windows.Forms.Label label5;
             private System.Windows.Forms.TextBox recoverTextBox;
             private System.Windows.Forms.Button statusButton;
-            private System.Windows.Forms.TextBox textBox1;
+            private System.Windows.Forms.TextBox statusTextBox;
             private System.Windows.Forms.Button readButton;
             private System.Windows.Forms.Button writeButton;
             private System.Windows.Forms.Label label6;

@@ -108,7 +108,12 @@ namespace PADI_DSTM {
             // Index for RoundRobin
             private int indexLastServer = 0;
             // ATENÇÃO!!! Quando se perde/remove um DataServer, precisa de correcão (-1?)
-            
+
+            public String Status() {
+                return "[I'm OK, I never fail!]";
+            }
+
+
             private void addPadInt(MyPadInt obj)
             {
                 int size = padIntsCache.Count;
@@ -120,7 +125,7 @@ namespace PADI_DSTM {
                 padIntsCache.Add(obj);
             }
 
-
+            
             public IPadInt CreatePadInt(int uid) {
                 Console.WriteLine("Client wants to create PadInt with id " + uid);
 
@@ -141,6 +146,8 @@ namespace PADI_DSTM {
                 }
             }
 
+            // Se o server a que esse objecto pertence estiver em Freeze ou Fail, faz sentido
+            // devolvermos o objecto em cache? Não estamos a violar o comportamento suposto?
 
             // Se a cache contem o PadInt
             //  retornamos PadInt
