@@ -130,6 +130,7 @@ namespace PADI_DSTM {
 
                 if (size == CACHE_SIZE) {
                     // remover o PadInt mais antigo
+                    Console.WriteLine("Oldest PadInt removed ");
                     padIntsCache.RemoveAt(0);
                 }
                 padIntsCache.Add(obj);
@@ -152,6 +153,7 @@ namespace PADI_DSTM {
                     addPadInt(myPadInt);
                     return obj;
                 } else {
+                    Console.WriteLine("PadInt already exists " );
                     return null;
                 }
             }
@@ -170,6 +172,8 @@ namespace PADI_DSTM {
                 if (padIntsCache.Contains(uid)) {
                     IPadInt obj = (IPadInt) padIntsCache[uid];
                     PadIntInfo padIntInfo = new PadIntInfo(obj);
+                    Console.WriteLine("PadInt stored in cache " );
+
                     return padIntInfo;
                 }
                 else if (padInts.Contains(uid)) {
@@ -216,6 +220,7 @@ namespace PADI_DSTM {
                 foreach(DataServerInfo server in dataServers){
                     serverName = server.remoteServer.name;
                     serverStatus = server.remoteServer.Status();
+                    Console.WriteLine("Server: " + serverName + " status: " + serverStatus);
                     results.Add(serverName, serverStatus);
                 }
                 return results;
