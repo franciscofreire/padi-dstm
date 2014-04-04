@@ -67,21 +67,24 @@ namespace PADI_DSTM
         }
 
         public IPadInt AccessPadInt(int uid) {
-            PadIntInfo obj = _masterServer.AccessPadInt("client1", uid);
+            PadIntInfo obj = _masterServer.AccessPadInt(uid);
+            
             if (!obj.hasPadInt()) {
+ 
                 IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
+                /*
                 if (dataServer.isFail) {
-                    Console.WriteLine("Client " + clientUrl + " can't access PadInt " + uid + ": " + dataServer.name + "is set to Fail!");
+                    //Console.WriteLine("Client " + clientUrl + " can't access PadInt " + uid + ": " + dataServer.name + "is set to Fail!");
                     return null;
                 } else if (dataServer.isFreeze) {
-                    Console.WriteLine("Client " + clientUrl + " can't access PadInt " + uid + ": " + dataServer.name + "is set to Freeze! Logging this command.");
+                    //Console.WriteLine("Client " + clientUrl + " can't access PadInt " + uid + ": " + dataServer.name + "is set to Freeze! Logging this command.");
                    // dataServer.SaveCommand( ....... )
                     return null;
-                } else {
+                } else { */
                     return dataServer.load(uid);
                     // ATENCAO: Objecto pode vir a null (por nao existir!)
                     
-                }
+                //}
             } else {
                 return obj.PadInt;
             }
@@ -91,15 +94,17 @@ namespace PADI_DSTM
         public bool Status() {
             // limpa janela do status das cacas anteriores:
             _statusBox.Invoke(new ClearTextDel(_statusBox.Clear));
-           
-            String line = _masterServer.Status() + "\r\n";
+
+            String text = "Node " + "MasterServer" + " is set to " + _masterServer.Status() + " Mode.";
+            //Console.WriteLine(text);
+            String line = text + "\r\n";
             _statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
 
             Hashtable results = _masterServer.propagateStatus();
 
             foreach (DictionaryEntry s in results) {
-                String text = "Node " + s.Key + " is set to " + s.Value + " Mode.";
-                Console.WriteLine(text);
+                text = "Node " + s.Key + " is set to " + s.Value + " Mode.";
+                //Console.WriteLine(text);
                 line = text + "\r\n";
                 _statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
             }

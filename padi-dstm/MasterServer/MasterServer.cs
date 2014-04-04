@@ -120,7 +120,9 @@ namespace PADI_DSTM {
             // ATENÇÃO!!! Quando se perde/remove um DataServer, precisa de correcão (-1?)
 
             public String Status() {
-                return "[I'm OK, I never fail!]";
+                String text = "[I'm OK, I never fail!]";
+                Console.WriteLine("Server: " + "MasterServer" + " status: " + text);
+                return text;
             }
 
 
@@ -138,18 +140,18 @@ namespace PADI_DSTM {
 
             
             public IPadInt CreatePadInt(int uid) {
-                Console.WriteLine("Client wants to create PadInt with id " + uid);
+                Console.WriteLine("[CREATE] Client wants to create PadInt with id " + uid);
 
                 DataServerInfo dServer = (DataServerInfo) dataServers[indexLastServer];
 
                 while (dServer.remoteServer.isFail) {
-                    Console.WriteLine("DataServer " + dServer.remoteServer.name + " is set to Fail: Passing his turn on Round Robin");
+                    Console.WriteLine("[CREATE] DataServer " + dServer.remoteServer.name + " is set to [Fail]: Passing his turn on Round Robin");
                     indexLastServer = (indexLastServer + 1) % dataServers.Count; // salta um índice
                     dServer = (DataServerInfo)dataServers[indexLastServer];
                 }
                 
                 if (dServer.remoteServer.isFreeze) {
-                    Console.WriteLine("DataServer " + dServer.remoteServer.name + "is set to Freeze: Logging this command.");
+                    Console.WriteLine("[CREATE] DataServer " + dServer.remoteServer.name + "is set to [Freeze]: Logging this command.");
                     // dServer.SaveCommand( ....... )
                     return null;
                 }                
@@ -161,10 +163,10 @@ namespace PADI_DSTM {
                     padInts.Add(uid, dServer);
                     MyPadInt myPadInt = new MyPadInt(uid, obj);
                     addPadInt(myPadInt);
-                    Console.WriteLine("PadInt " + uid + " stored on " + dServer.remoteServer.name );
+                    Console.WriteLine("[CREATE] PadInt " + uid + " stored on " + dServer.remoteServer.name );
                     return obj;
                 } else {
-                    Console.WriteLine("PadInt already exists " );
+                    Console.WriteLine("[CREATE] Error: PadInt " + uid + " already exists." );
                     return null;
                 }
             }
@@ -178,23 +180,25 @@ namespace PADI_DSTM {
             //  retornamos PadInt
             // Caso contrario
             //  retornamos url
-            public PadIntInfo AccessPadInt(String client, int uid) {
-                Console.WriteLine("Client " + client);
-                Console.WriteLine("Requests PadInt with id " + uid);
+            public PadIntInfo AccessPadInt(int uid) {
+                Console.WriteLine("[ACCESS] Client requests PadInt with id " + uid);
 
+                
                 if (padIntsCache.Contains(uid)) {
                     IPadInt obj = (IPadInt) padIntsCache[uid];
                     PadIntInfo padIntInfo = new PadIntInfo(obj);
-                    Console.WriteLine("PadInt stored in cache " );
+                    Console.WriteLine("[ACCESS] PadInt " + uid + " returned from the cache. " );
 
                     return padIntInfo;
                 }
                 else if (padInts.Contains(uid)) {
                     DataServerInfo dServer = (DataServerInfo)padInts[uid];
                     PadIntInfo padIntInfo = new PadIntInfo(dServer.URL);
+                    Console.WriteLine("[ACCESS] Returned " + dServer.remoteServer.name + "'s URL, to further access PadInt " + uid +".");
                     return padIntInfo;
                 }
                 else { //PadInt nao existe
+                    Console.WriteLine("[ACCESS] Error: PadInt " + uid + " does not exist.");
                     return null;
                 }
             }
@@ -209,7 +213,7 @@ namespace PADI_DSTM {
                 DataServerInfo serverInfo = new DataServerInfo(url, remoteServer);
                 dataServers.Add(serverInfo);
 
-                Console.WriteLine("Server " + url + " registered");
+                Console.WriteLine("Server " + url + " registered.");
             }
 
             public void registerClient(String url) {
@@ -221,7 +225,7 @@ namespace PADI_DSTM {
                 //IClient remoteClient = (IClient)Activator.GetObject(typeof(IClient), url);
                 ClientInfo clientInfo = new ClientInfo(url, null);
                 clients.Add(clientInfo);
-                Console.WriteLine("Client " + url + " registered");
+                Console.WriteLine("Client " + url + " registered.");
             }
 
 

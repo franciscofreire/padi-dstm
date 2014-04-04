@@ -50,7 +50,7 @@ namespace PADI_DSTM
     public interface IMasterServer
     {
         IPadInt CreatePadInt(int uid);
-        PadIntInfo AccessPadInt(String client, int uid);
+        PadIntInfo AccessPadInt(int uid);
         void registerServer(String url);
         void registerClient(String url);
         Hashtable propagateStatus();
@@ -75,6 +75,7 @@ namespace PADI_DSTM
             set;
         }
     }
+
 
     public interface IClient {
 
