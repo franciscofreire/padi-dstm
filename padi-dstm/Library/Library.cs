@@ -70,7 +70,18 @@ namespace PADI_DSTM
             PadIntInfo obj = _masterServer.AccessPadInt("client1", uid);
             if (!obj.hasPadInt()) {
                 IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
-                return dataServer.load(uid);
+                if (dataServer.isFail) {
+                    Console.WriteLine("Client " + clientUrl + " can't access PadInt " + uid + ": " + dataServer.name + "is set to Fail!");
+                    return null;
+                } else if (dataServer.isFreeze) {
+                    Console.WriteLine("Client " + clientUrl + " can't access PadInt " + uid + ": " + dataServer.name + "is set to Freeze! Logging this command.");
+                   // dataServer.SaveCommand( ....... )
+                    return null;
+                } else {
+                    return dataServer.load(uid);
+                    // ATENCAO: Objecto pode vir a null (por nao existir!)
+                    
+                }
             } else {
                 return obj.PadInt;
             }

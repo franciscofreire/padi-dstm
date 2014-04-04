@@ -90,24 +90,24 @@ namespace PADI_DSTM {
 
             public bool Freeze() {
                 isFreeze = true;
-                Console.WriteLine("Dataserver" + _name + "set to freeze");
+                Console.WriteLine("Dataserver " + _name + " set to freeze");
                 return true;
             }
 
             public bool Fail() {
                 isFail = true;
-                Console.WriteLine("Dataserver" + _name + "set to fail");
+                Console.WriteLine("Dataserver " + _name + " set to fail");
                 return true;
             }
 
             public bool Recover() {
                 if (isFail) {
                     isFail = false;
-                    Console.WriteLine("Dataserver" + _name + "recovered");
+                    Console.WriteLine("Dataserver " + _name + " recovered");
                     return true;
                 } else if (isFreeze) {
                     isFreeze = false;
-                    Console.WriteLine("Dataserver" + _name + "recovered");
+                    Console.WriteLine("Dataserver " + _name + " recovered");
                     // TODO: Read and dispatch logged requests
                     return true;
                 } else {
@@ -128,11 +128,11 @@ namespace PADI_DSTM {
 
             public IPadInt store(int uid) {
                 if (isFail) {
-                    Console.WriteLine("DataServer " + name + " is set to Fail Mode!");
+                    Console.WriteLine("DataServer " + name + " is set to Fail mode!");
                     return null;
 
                 } else if (isFreeze) {
-                    Console.WriteLine("DataServer " + name + " is set to Freeze Mode!");
+                    Console.WriteLine("DataServer " + name + " is set to Freeze mode!");
                     return null;
 
                 } else {
@@ -148,11 +148,11 @@ namespace PADI_DSTM {
 
             public IPadInt load(int uid) {
                 if (isFail) {
-                    Console.WriteLine("DataServer " + name + " is set to Fail Mode!");
+                    Console.WriteLine("DataServer " + name + " is set to Fail mode!");
                     return null;
 
                 } else if (isFreeze) {
-                    Console.WriteLine("DataServer " + name + " is set to Freeze Mode!");
+                    Console.WriteLine("DataServer " + name + " is set to Freeze mode!");
                     return null;
 
                 } else {

@@ -141,17 +141,27 @@ namespace PADI_DSTM {
                 Console.WriteLine("Client wants to create PadInt with id " + uid);
 
                 DataServerInfo dServer = (DataServerInfo) dataServers[indexLastServer];
-                
-                // Round Robin:
-                indexLastServer = (indexLastServer + 1) % dataServers.Count;
 
-                IPadInt obj = dServer.remoteServer.store(uid);
+                while (dServer.remoteServer.isFail) {
+                    Console.WriteLine("DataServer " + dServer.remoteServer.name + " is set to Fail: Passing his turn on Round Robin");
+                    indexLastServer = (indexLastServer + 1) % dataServers.Count; // salta um índice
+                    dServer = (DataServerInfo)dataServers[indexLastServer];
+                }
                 
+                if (dServer.remoteServer.isFreeze) {
+                    Console.WriteLine("DataServer " + dServer.remoteServer.name + "is set to Freeze: Logging this command.");
+                    // dServer.SaveCommand( ....... )
+                    return null;
+                }                
+
                 if (!padInts.Contains(uid)) {
+                    IPadInt obj = dServer.remoteServer.store(uid);
+                    // Round Robin:
+                    indexLastServer = (indexLastServer + 1) % dataServers.Count;
                     padInts.Add(uid, dServer);
                     MyPadInt myPadInt = new MyPadInt(uid, obj);
                     addPadInt(myPadInt);
-                    Console.WriteLine("PadInt" + uid + "stored on " + dServer );
+                    Console.WriteLine("PadInt " + uid + " stored on " + dServer.remoteServer.name );
                     return obj;
                 } else {
                     Console.WriteLine("PadInt already exists " );
@@ -161,7 +171,9 @@ namespace PADI_DSTM {
 
             // Se o server a que esse objecto pertence estiver em Freeze ou Fail, faz sentido
             // devolvermos o objecto em cache? Não estamos a violar o comportamento suposto?
-
+            //
+            // mais: ao devolver o url ao client, nao devemos tambem ir buscar o objecto e por na cache?
+            //
             // Se a cache contem o PadInt
             //  retornamos PadInt
             // Caso contrario

@@ -66,6 +66,14 @@ namespace PADI_DSTM
         bool Freeze();
         bool Recover();
         String Status();
+        bool isFail {
+            get;
+            set;
+        }
+        bool isFreeze {
+            get;
+            set;
+        }
     }
 
     public interface IClient {
