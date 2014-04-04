@@ -91,12 +91,14 @@ namespace PADI_DSTM {
             public bool Freeze() {
                 isFreeze = true;
                 Console.WriteLine("[STATUS] Dataserver " + _name + " changed to [Freeze].");
+                Console.WriteLine("---");
                 return true;
             }
 
             public bool Fail() {
                 isFail = true;
                 Console.WriteLine("[STATUS] Dataserver " + _name + " changed to [Fail].");
+                Console.WriteLine("---");
                 return true;
             }
 
@@ -104,11 +106,13 @@ namespace PADI_DSTM {
                 if (isFail) {
                     isFail = false;
                     Console.WriteLine("[STATUS] Dataserver " + _name + " is recovered, changed to [OK].");
+                    Console.WriteLine("---");
                     return true;
                 } else if (isFreeze) {
                     isFreeze = false;
                     Console.WriteLine("[STATUS] Dataserver " + _name + " is recovered, changed to [OK].");
                     // TODO: Read and dispatch logged requests
+                    Console.WriteLine("---");
                     return true;
                 } else {
                     return false;
@@ -128,11 +132,14 @@ namespace PADI_DSTM {
 
             public IPadInt store(int uid) {
                 if (isFail) {
-                    Console.WriteLine("Error: DataServer " + name + " is set to [Fail] mode!");
+                    Console.WriteLine("[!STORE] Error: DataServer " + name + " is set to [Fail] mode!");
+                    Console.WriteLine("---");
+                    
                     return null;
 
                 } else if (isFreeze) {
-                    Console.WriteLine("Error: DataServer " + name + " is set to [Freeze] mode!");
+                    Console.WriteLine("[!STORE] Error: DataServer " + name + " is set to [Freeze] mode!");
+                    Console.WriteLine("---");
                     return null;
 
                 } else {
@@ -141,9 +148,11 @@ namespace PADI_DSTM {
                         PadInt obj = new PadInt();
                         padInts.Add(uid, obj);
                         Console.WriteLine("[STORE] DataServer " + name + " stored PadInt " + uid);
+                        Console.WriteLine("---");
                         return obj;
                     }
                     Console.WriteLine("[!STORE] DataServer " + name + " cannot store PadInt " + uid + ": already exists.");
+                    Console.WriteLine("---");
                     return null;
                 }
             }
@@ -151,21 +160,24 @@ namespace PADI_DSTM {
 
             public IPadInt load(int uid) {
                 if (isFail) {
-                    Console.WriteLine("Error: DataServer " + name + " is set to [Fail] mode!");
+                    Console.WriteLine("[!LOAD] Error: DataServer " + name + " is set to [Fail] mode!");
+                    Console.WriteLine("---");
                     return null;
 
                 } else if (isFreeze) {
-                    Console.WriteLine("Error: DataServer " + name + " is set to [Freeze] mode!");
+                    Console.WriteLine("[!LOAD] Error: DataServer " + name + " is set to [Freeze] mode!");
+                    Console.WriteLine("---");
                     return null;
 
                 } else {
                     if (padInts.Contains(uid)) {
                         Console.WriteLine("[LOAD] DataServer " + name + " load PadInt " + uid);
-                        
+                        Console.WriteLine("---");
                         return (IPadInt)padInts[uid];
                         
                     }
                     Console.WriteLine("[!LOAD] DataServer " + name + " cannot load PadInt " + uid + ": does not exist.");
+                    Console.WriteLine("---");
                     return null;
                 }
             }
@@ -193,6 +205,7 @@ namespace PADI_DSTM {
                 RemotingServices.Marshal(server2, name2, typeof(IDataServer));
                 String url2 = "tcp://localhost:" + port + "/" + name2;
                 System.Console.WriteLine("Started " + name2 + "...");
+                Console.WriteLine("---");
 
                 String urlMaster = "tcp://localhost:9999/MasterServer";
                 IMasterServer masterServer = (IMasterServer) Activator.GetObject(typeof(IMasterServer), urlMaster);

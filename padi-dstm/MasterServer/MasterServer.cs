@@ -122,6 +122,7 @@ namespace PADI_DSTM {
             public String Status() {
                 String text = "[I'm OK, I never fail!]";
                 Console.WriteLine("Server: " + "MasterServer" + " status: " + text);
+                
                 return text;
             }
 
@@ -153,6 +154,7 @@ namespace PADI_DSTM {
                 if (dServer.remoteServer.isFreeze) {
                     Console.WriteLine("[CREATE] DataServer " + dServer.remoteServer.name + "is set to [Freeze]: Logging this command.");
                     // dServer.SaveCommand( ....... )
+                    Console.WriteLine("---");
                     return null;
                 }                
 
@@ -164,11 +166,14 @@ namespace PADI_DSTM {
                     MyPadInt myPadInt = new MyPadInt(uid, obj);
                     addPadInt(myPadInt);
                     Console.WriteLine("[CREATE] PadInt " + uid + " stored on " + dServer.remoteServer.name );
+                    Console.WriteLine("---");
                     return obj;
                 } else {
-                    Console.WriteLine("[CREATE] Error: PadInt " + uid + " already exists." );
+                    Console.WriteLine("[!CREATE] Error: PadInt " + uid + " already exists." );
+                    Console.WriteLine("---");
                     return null;
                 }
+                
             }
 
             // Se o server a que esse objecto pertence estiver em Freeze ou Fail, faz sentido
@@ -188,17 +193,19 @@ namespace PADI_DSTM {
                     IPadInt obj = (IPadInt) padIntsCache[uid];
                     PadIntInfo padIntInfo = new PadIntInfo(obj);
                     Console.WriteLine("[ACCESS] PadInt " + uid + " returned from the cache. " );
-
+                    Console.WriteLine("---");
                     return padIntInfo;
                 }
                 else if (padInts.Contains(uid)) {
                     DataServerInfo dServer = (DataServerInfo)padInts[uid];
                     PadIntInfo padIntInfo = new PadIntInfo(dServer.URL);
                     Console.WriteLine("[ACCESS] Returned " + dServer.remoteServer.name + "'s URL, to further access PadInt " + uid +".");
+                    Console.WriteLine("---");
                     return padIntInfo;
                 }
                 else { //PadInt nao existe
-                    Console.WriteLine("[ACCESS] Error: PadInt " + uid + " does not exist.");
+                    Console.WriteLine("[!ACCESS] Error: PadInt " + uid + " does not exist.");
+                    Console.WriteLine("---");
                     return null;
                 }
             }
@@ -213,7 +220,8 @@ namespace PADI_DSTM {
                 DataServerInfo serverInfo = new DataServerInfo(url, remoteServer);
                 dataServers.Add(serverInfo);
 
-                Console.WriteLine("Server " + url + " registered.");
+                Console.WriteLine("Server " + remoteServer.name + " registered.");
+                Console.WriteLine("---");
             }
 
             public void registerClient(String url) {
@@ -226,6 +234,7 @@ namespace PADI_DSTM {
                 ClientInfo clientInfo = new ClientInfo(url, null);
                 clients.Add(clientInfo);
                 Console.WriteLine("Client " + url + " registered.");
+                Console.WriteLine("---");
             }
 
 
@@ -240,6 +249,7 @@ namespace PADI_DSTM {
                     Console.WriteLine("Server: " + serverName + " status: " + serverStatus);
                     results.Add(serverName, serverStatus);
                 }
+                Console.WriteLine("---");
                 return results;
             }
 
@@ -257,6 +267,7 @@ namespace PADI_DSTM {
                 RemotingServices.Marshal(master, "MasterServer", typeof(IMasterServer));
 
                 System.Console.WriteLine("Started Master Server...");
+                Console.WriteLine("---");
                 System.Console.ReadKey();
             }
         }
