@@ -151,6 +151,7 @@ namespace PADI_DSTM {
                     padInts.Add(uid, dServer);
                     MyPadInt myPadInt = new MyPadInt(uid, obj);
                     addPadInt(myPadInt);
+                    Console.WriteLine("PadInt stored ");
                     return obj;
                 } else {
                     Console.WriteLine("PadInt already exists " );
