@@ -4,7 +4,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Remoting.Channels;
 
 namespace PADI_DSTM
 {
@@ -17,18 +19,29 @@ namespace PADI_DSTM
         // TextBox to dump status
         private TextBox _statusBox;
 
+        // Client info
+        private int port;
+        private String clientUrl;
+        
+        
+        private TcpChannel channel;
+
         // MasterServer remote object
         private IMasterServer _masterServer;
 
-        public Library(TextBox box) {
+        public Library(TextBox box, String clientUrl, int port) {
             _statusBox = box;
+            this.clientUrl = clientUrl;
+            this.port = port;
         }
 
-        public bool Init() {  //public?
-        //TODO
+        public bool Init() {
+            channel = new TcpChannel(port);
+            ChannelServices.RegisterChannel(channel, true);
             String urlMaster = "tcp://localhost:9999/MasterServer";
             _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
-            return false;
+            _masterServer.registerClient(clientUrl); 
+            return true;
         }
 
         public bool TxBegin() { 
@@ -62,9 +75,6 @@ namespace PADI_DSTM
                 return obj.PadInt;
             }
         }
-
-
-
 
 
         public bool Status() {

@@ -201,8 +201,8 @@ namespace PADI_DSTM {
                         return;
                 }
                 // obter referencia remota e registar cliente
-                IClient remoteClient = (IClient)Activator.GetObject(typeof(IClient), url);
-                ClientInfo clientInfo = new ClientInfo(url, remoteClient);
+                //IClient remoteClient = (IClient)Activator.GetObject(typeof(IClient), url);
+                ClientInfo clientInfo = new ClientInfo(url, null);
                 clients.Add(clientInfo);
                 Console.WriteLine("Client " + url + " registered");
             }
