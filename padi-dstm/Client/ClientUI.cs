@@ -25,6 +25,8 @@ namespace PADI_DSTM
             private void initButton_Click(object sender, EventArgs e) {
                 _lib = new Library(statusTextBox, "tcp:localhost:9910/Client",9910);
                 _lib.Init();
+
+                initButton.Enabled = false;
             }
 
             private void createButton_Click(object sender, EventArgs e) {
