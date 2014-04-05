@@ -151,6 +151,7 @@ namespace PADI_DSTM {
                         Console.WriteLine("---");
                         return obj;
                     }
+                    // este caso nunca acontece (o master testa o mesmo)
                     Console.WriteLine("[!STORE] DataServer " + name + " cannot store PadInt " + uid + ": already exists.");
                     Console.WriteLine("---");
                     return null;
@@ -176,6 +177,7 @@ namespace PADI_DSTM {
                         return (IPadInt)padInts[uid];
                         
                     }
+                    // este caso nunca acontece (o master testa o mesmo)
                     Console.WriteLine("[!LOAD] DataServer " + name + " cannot load PadInt " + uid + ": does not exist.");
                     Console.WriteLine("---");
                     return null;

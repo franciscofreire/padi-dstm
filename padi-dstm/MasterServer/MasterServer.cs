@@ -143,23 +143,25 @@ namespace PADI_DSTM {
             public IPadInt CreatePadInt(int uid) {
                 Console.WriteLine("[CREATE] Client wants to create PadInt with id " + uid);
 
-                DataServerInfo dServer = (DataServerInfo) dataServers[indexLastServer];
-
-                while (dServer.remoteServer.isFail) {
-                    Console.WriteLine("[CREATE] DataServer " + dServer.remoteServer.name + " is set to [Fail]: Passing his turn on Round Robin");
-                    indexLastServer = (indexLastServer + 1) % dataServers.Count; // salta um índice
-                    dServer = (DataServerInfo)dataServers[indexLastServer];
-                }
-                
-                if (dServer.remoteServer.isFreeze) {
-                    Console.WriteLine("[CREATE] DataServer " + dServer.remoteServer.name + "is set to [Freeze]: Logging this command.");
-                    // dServer.SaveCommand( ....... )
-                    Console.WriteLine("---");
-                    return null;
-                }                
-
                 if (!padInts.Contains(uid)) {
+                    DataServerInfo dServer = (DataServerInfo)dataServers[indexLastServer];
+
+                    while (dServer.remoteServer.isFail) {
+                        Console.WriteLine("[CREATE] DataServer " + dServer.remoteServer.name + " is set to [Fail]: Passing his turn on Round Robin");
+                        indexLastServer = (indexLastServer + 1) % dataServers.Count; // salta um índice
+                        dServer = (DataServerInfo)dataServers[indexLastServer];
+                    }
+
+                    if (dServer.remoteServer.isFreeze) {
+                        Console.WriteLine("[CREATE] DataServer " + dServer.remoteServer.name + "is set to [Freeze]: Logging this command.");
+                        // dServer.SaveCommand( ....... )
+                        Console.WriteLine("---");
+                        return null;
+                    }  
+
                     IPadInt obj = dServer.remoteServer.store(uid);
+                    // obj nao vem nunca a null porque controlámos isso nos ifs anteriores...
+
                     // Round Robin:
                     indexLastServer = (indexLastServer + 1) % dataServers.Count;
                     padInts.Add(uid, dServer);

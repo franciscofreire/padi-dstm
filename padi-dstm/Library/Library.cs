@@ -63,13 +63,29 @@ namespace PADI_DSTM
 
 
         public IPadInt CreatePadInt (int uid) {
-           return _masterServer.CreatePadInt(uid);
+            IPadInt obj = _masterServer.CreatePadInt(uid);
+
+            if (obj == null) {
+                // obj veio a null: já existia, ou o servidor está em freeze (?)
+                // excepção
+                return null;
+            } else {
+                return obj;
+
+            }
         }
 
         public IPadInt AccessPadInt(int uid) {
             PadIntInfo obj = _masterServer.AccessPadInt(uid);
-            
-            if (!obj.hasPadInt()) {
+
+            if (obj == null) {
+                // vem a null porque nao existe na tabela padInts do master sequer!
+                // excepção!
+                return null;
+            }
+
+
+            else if (!obj.hasPadInt()) {
  
                 IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
                 /*
@@ -81,9 +97,14 @@ namespace PADI_DSTM
                    // dataServer.SaveCommand( ....... )
                     return null;
                 } else { */
-                    return dataServer.load(uid);
-                    // ATENCAO: Objecto pode vir a null (por nao existir!)
-                    
+                IPadInt padIntObj = dataServer.load(uid);
+                if (padIntObj == null) {
+                    // ATENCAO: Objecto pode vir a null (por nao existir - server nao responde (freeze?)!)
+                    // excepção!
+                    return null;
+                } else {
+                    return padIntObj;
+                }
                 //}
             } else {
                 return obj.PadInt;
