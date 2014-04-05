@@ -62,13 +62,15 @@ namespace PADI_DSTM {
             private bool _isFail;
             private bool _isFreeze;
             private String _name;
+            private String _url;
 
             private Hashtable padInts = new Hashtable();
 
             // TODO: I need to have a log, for Freeze+Recover commands!!!
 
-            public Server(String name) {
+            public Server(String name, String url) {
                 _name = name;
+                _url = url;
                 _isFail = false;
                 _isFreeze = false;
             }
@@ -76,6 +78,15 @@ namespace PADI_DSTM {
             public String name {
                 get { return _name; }
                 set { _name = value; }
+            }
+
+            public String URL {
+                get {
+                    return _url;
+                }
+                set {
+                    _url = value;
+                }
             }
 
             public bool isFail {
@@ -183,6 +194,69 @@ namespace PADI_DSTM {
                     return null;
                 }
             }
+
+
+
+            // 2PC INTERFACE COMMANDS
+
+            // commando para ele se juntar aos participantes de uma transacção!!!
+            // aqui ou no master? :\
+            public bool join(MyTransaction t) {
+                Console.WriteLine("[JOIN] Master Request.");
+                t.Participants.Add(URL);
+                Console.WriteLine("---");
+                
+                return false;
+            }
+
+
+
+
+            public bool canCommit(MyTransaction t) {
+                Console.WriteLine("[canCommit] Master Request.");
+                Console.WriteLine("---");
+                return false;
+            }
+
+            public bool doCommit(MyTransaction t) {
+                Console.WriteLine("[doCommit] Master Request.");
+                Console.WriteLine("---");
+                return false;
+            }
+
+            public bool doAbort(MyTransaction t) {
+                Console.WriteLine("[doAbort] Master Request.");
+                Console.WriteLine("---");
+                return false;
+            }
+
+            public bool haveCommited(MyTransaction t) {
+                Console.WriteLine("[haveCommitted] Master Request.");
+                Console.WriteLine("---");
+                return false;
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         }
 
 
@@ -197,21 +271,23 @@ namespace PADI_DSTM {
 
                 String name1 = "DataServer1";
                 String name2 = "DataServer2";
+                String url1 = "tcp://localhost:" + port + "/" + name1;
+                String url2 = "tcp://localhost:" + port + "/" + name2;
 
-                Server server = new Server(name1);
+                Server server = new Server(name1, url1);
                 RemotingServices.Marshal(server, name1, typeof(IDataServer));
                 System.Console.WriteLine("Started " + name1 + "...");
-                String url = "tcp://localhost:" + port + "/" + name1;
+                
 
-                Server server2 = new Server(name2);
+                Server server2 = new Server(name2, url2);
                 RemotingServices.Marshal(server2, name2, typeof(IDataServer));
-                String url2 = "tcp://localhost:" + port + "/" + name2;
+                
                 System.Console.WriteLine("Started " + name2 + "...");
                 Console.WriteLine("---");
 
                 String urlMaster = "tcp://localhost:9999/MasterServer";
                 IMasterServer masterServer = (IMasterServer) Activator.GetObject(typeof(IMasterServer), urlMaster);
-                masterServer.registerServer(url);
+                masterServer.registerServer(url1);
                 masterServer.registerServer(url2);
 
                 System.Console.ReadKey();

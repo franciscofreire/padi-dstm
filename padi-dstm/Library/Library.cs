@@ -7,6 +7,7 @@ using System.Text;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
+using System.Transactions;
 
 namespace PADI_DSTM
 {
@@ -23,7 +24,13 @@ namespace PADI_DSTM
         private int port;
         private String clientUrl;
         
-        
+        // Object being manipulated
+        private IPadInt _txObj;
+
+        // Current transaction from this client
+        private MyTransaction _tx;
+
+        // TCP Channel
         private TcpChannel channel;
 
         // MasterServer remote object
@@ -44,49 +51,95 @@ namespace PADI_DSTM
             return true;
         }
 
-        public bool TxBegin() { 
-        //TODO
+
+
+        // TODO
+        public bool TxBegin() {
+            try {
+                _tx = _masterServer.TxBegin(clientUrl, _txObj);
+            } catch (TxException e){
+                Console.WriteLine("Transaction with id " + e.Tid + " cannot begin.");
+            }
             return false;
         }
         
+
+
+        // TODO
         public bool TxCommit() {
-        //TODO
+            try { 
+            _masterServer.TxCommit(_tx);
+            } catch (TxException e){
+                Console.WriteLine("Transaction with id " + e.Tid + " cannot be commited.");
+            }
             return false;
         }
 
+        // TODO
         public bool TxAbort() {
-        //TODO
+            try {
+            _masterServer.TxAbort(_tx);
+            
+            } catch (TxException e){
+                Console.WriteLine("Transaction with id " + e.Tid + " cannot be aborted.");
+                
+            }
             return false;
         }
+
+        // TODO
+        public int Read() {
+            try {
+                int value = _txObj.Read();
+                return value;
+            
+            } catch (TxException e) {
+                Console.WriteLine("Transaction with id " + e.Tid + " failed to Read.");
+            
+            }
+            return -1;
+            
+        }
+
+        // TODO
+        public void Write(int value) {
+            try {
+                _txObj.Write(value);
+
+            } catch (TxException e) {
+                Console.WriteLine("Transaction with id " + e.Tid + " failed to Write.");
+
+            }
+        }
+
+
+
 
 
 
 
         public IPadInt CreatePadInt (int uid) {
             IPadInt obj = _masterServer.CreatePadInt(uid);
-
             if (obj == null) {
                 // obj veio a null: já existia, ou o servidor está em freeze (?)
                 // excepção
+                _txObj = null;
                 return null;
             } else {
+                _txObj = obj;
                 return obj;
-
             }
         }
 
         public IPadInt AccessPadInt(int uid) {
             PadIntInfo obj = _masterServer.AccessPadInt(uid);
-
             if (obj == null) {
                 // vem a null porque nao existe na tabela padInts do master sequer!
                 // excepção!
+                _txObj = null;
                 return null;
             }
-
-
             else if (!obj.hasPadInt()) {
- 
                 IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
                 /*
                 if (dataServer.isFail) {
@@ -101,12 +154,15 @@ namespace PADI_DSTM
                 if (padIntObj == null) {
                     // ATENCAO: Objecto pode vir a null (por nao existir - server nao responde (freeze?)!)
                     // excepção!
+                    _txObj = null;
                     return null;
                 } else {
+                    _txObj = padIntObj;
                     return padIntObj;
                 }
                 //}
             } else {
+                _txObj = obj.PadInt;
                 return obj.PadInt;
             }
         }
@@ -115,14 +171,11 @@ namespace PADI_DSTM
         public bool Status() {
             // limpa janela do status das cacas anteriores:
             _statusBox.Invoke(new ClearTextDel(_statusBox.Clear));
-
             String text = "Node " + "MasterServer" + " is set to " + _masterServer.Status() + " Mode.";
             //Console.WriteLine(text);
             String line = text + "\r\n";
             _statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
-
             Hashtable results = _masterServer.propagateStatus();
-
             foreach (DictionaryEntry s in results) {
                 text = "Node " + s.Key + " is set to " + s.Value + " Mode.";
                 //Console.WriteLine(text);

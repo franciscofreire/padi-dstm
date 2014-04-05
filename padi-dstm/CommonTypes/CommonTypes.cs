@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace PADI_DSTM
 {
@@ -46,6 +47,55 @@ namespace PADI_DSTM
         }
     }
 
+     [Serializable]
+    public class MyTransaction {
+        // Transaction Info
+        private int _txID;
+        private Transaction _tx; // CommittableTransaction ?
+        private IPadInt _txObj;
+        ArrayList _participants;
+
+        public MyTransaction(int tid, Transaction tx, IPadInt txObj, ArrayList p) {
+            _txID = tid;
+            _tx = tx;
+            _txObj = txObj;
+            _participants = p;
+        }
+
+        public int txID {
+            get {
+                return _txID;
+            }
+            set {
+                _txID = value;
+            }
+        }
+
+        public Transaction tx {
+            get {
+                return _tx;
+            }
+            set {
+                _tx = value;
+            }
+        }
+
+        public IPadInt txObj {
+            get {
+                return _txObj;
+            }
+            set {
+                _txObj = value;
+            }
+        }
+
+        public ArrayList Participants {
+            get {
+                return _participants;
+            }
+        }
+    }
+
 
     public interface IMasterServer
     {
@@ -55,6 +105,11 @@ namespace PADI_DSTM
         void registerClient(String url);
         Hashtable propagateStatus();
         String Status();
+        
+        MyTransaction TxBegin(String clientUrl, IPadInt obj);
+        bool TxAbort(MyTransaction t);
+        bool TxCommit(MyTransaction t);
+        bool getDecision(MyTransaction t);
     }
 
     public interface IDataServer
@@ -66,14 +121,12 @@ namespace PADI_DSTM
         bool Freeze();
         bool Recover();
         String Status();
-        bool isFail {
-            get;
-            set;
-        }
-        bool isFreeze {
-            get;
-            set;
-        }
+        bool isFail { get; set; }
+        bool isFreeze { get; set; }
+        bool canCommit(MyTransaction t);
+        bool doCommit(MyTransaction t);
+        bool doAbort(MyTransaction t);
+        bool haveCommited(MyTransaction t);
     }
 
 
