@@ -52,13 +52,13 @@ namespace PADI_DSTM
         // Transaction Info
         private int _txID;
         private Transaction _tx; // CommittableTransaction ?
-        private IPadInt _txObj;
+        private ArrayList _txObjs;
         ArrayList _participants;
 
-        public MyTransaction(int tid, Transaction tx, IPadInt txObj, ArrayList p) {
+        public MyTransaction(int tid, Transaction tx, ArrayList txObjs, ArrayList p) {
             _txID = tid;
             _tx = tx;
-            _txObj = txObj;
+            _txObjs = txObjs;
             _participants = p;
         }
 
@@ -80,13 +80,13 @@ namespace PADI_DSTM
             }
         }
 
-        public IPadInt txObj {
+        public ArrayList txObjs {
             get {
-                return _txObj;
+                return _txObjs;
             }
-            set {
-                _txObj = value;
-            }
+            /* set {
+                _txObjs = value;
+            } */
         }
 
         public ArrayList Participants {
@@ -105,7 +105,7 @@ namespace PADI_DSTM
         Hashtable propagateStatus();
         String Status();
         
-        MyTransaction TxBegin(String clientUrl, IPadInt obj);
+        MyTransaction TxBegin(String clientUrl, ArrayList objs);
         bool TxAbort(MyTransaction t);
         bool TxCommit(MyTransaction t);
         bool getDecision(MyTransaction t);

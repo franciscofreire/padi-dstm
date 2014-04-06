@@ -251,13 +251,13 @@ namespace PADI_DSTM {
                 /*            ... E transacções ...                    */
 
             // interlocked -> ver: msdn.microsoft.com/en-us/library/dd78zt0c.aspx
-            public MyTransaction TxBegin(String clientUrl, IPadInt obj) {
+            public MyTransaction TxBegin(String clientUrl, ArrayList objs) {
                 Console.WriteLine("[TxBegin] Client request");
                 lock (this) {
                     int txID = transactionId;
                     Interlocked.Increment(ref transactionId);
                     Transaction tx = new CommittableTransaction();
-                    MyTransaction t = new MyTransaction(txID, tx, obj, new ArrayList());
+                    MyTransaction t = new MyTransaction(txID, tx, objs, new ArrayList());
                     clientTransactions.Add(clientUrl, t);
                     Console.WriteLine("---");               
                     return t;

@@ -24,8 +24,13 @@ namespace PADI_DSTM
         private int port;
         private String clientUrl;
         
-        // Object being manipulated
-        private IPadInt _txObj;
+        // Last object accessed
+        private IPadInt _accessedObj;
+
+        // All the PadInt objects accessed by this client (target objects for Read/Write)
+        private ArrayList _myObjects;
+
+
 
         // Current transaction from this client
         private MyTransaction _tx;
@@ -40,6 +45,7 @@ namespace PADI_DSTM
             _statusBox = box;
             this.clientUrl = clientUrl;
             this.port = port;
+            _myObjects = new ArrayList();
         }
 
         public bool Init() {
@@ -56,7 +62,7 @@ namespace PADI_DSTM
         // TODO
         public bool TxBegin() {
             try {
-                _tx = _masterServer.TxBegin(clientUrl, _txObj);
+                _tx = _masterServer.TxBegin(clientUrl, _myObjects);
             } catch (TxException e){
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot begin.");
             }
@@ -90,7 +96,7 @@ namespace PADI_DSTM
         // TODO
         public int Read() {
             try {
-                int value = _txObj.Read();
+                int value = _accessedObj.Read();
                 return value;
             
             } catch (TxException e) {
@@ -104,7 +110,7 @@ namespace PADI_DSTM
         // TODO
         public void Write(int value) {
             try {
-                _txObj.Write(value);
+                _accessedObj.Write(value);
 
             } catch (TxException e) {
                 Console.WriteLine("Transaction with id " + e.Tid + " failed to Write.");
@@ -117,10 +123,11 @@ namespace PADI_DSTM
             if (obj == null) {
                 // obj veio a null: já existia, ou o servidor está em freeze (?)
                 // excepção
-                _txObj = null;
+                _accessedObj = null;
                 return null;
             } else {
-                _txObj = obj;
+                _accessedObj = obj;
+                _myObjects.Add(obj);
                 return obj;
             }
         }
@@ -130,7 +137,7 @@ namespace PADI_DSTM
             if (obj == null) {
                 // vem a null porque nao existe na tabela padInts do master sequer!
                 // excepção!
-                _txObj = null;
+                _accessedObj = null;
                 return null;
             }
             else if (!obj.hasPadInt()) {
@@ -148,15 +155,17 @@ namespace PADI_DSTM
                 if (padIntObj == null) {
                     // ATENCAO: Objecto pode vir a null (por nao existir - server nao responde (freeze?)!)
                     // excepção!
-                    _txObj = null;
+                    _accessedObj = null;
                     return null;
                 } else {
-                    _txObj = padIntObj;
+                    _accessedObj = padIntObj;
+                    _myObjects.Add(padIntObj);
                     return padIntObj;
                 }
                 //}
             } else {
-                _txObj = obj.PadInt;
+                _accessedObj = obj.PadInt;
+                _myObjects.Add(obj.PadInt);
                 return obj.PadInt;
             }
         }
