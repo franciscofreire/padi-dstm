@@ -62,7 +62,6 @@ namespace PADI_DSTM {
                 private int uid;
                 private IPadInt padInt;
 
-                
                 public int Uid {
                     get { return uid; }
                     set { uid = value; }
@@ -138,6 +137,10 @@ namespace PADI_DSTM {
                 return results;
             }
 
+            public bool join(MyTransaction t) {
+                //TODO
+                return false;
+            }
 
             private void addPadInt(MyPadInt obj)
             {
@@ -206,6 +209,9 @@ namespace PADI_DSTM {
                     PadIntInfo padIntInfo = new PadIntInfo(dServer.URL);
                     Console.WriteLine("[ACCESS] Returned " + dServer.remoteServer.name + "'s URL, to further access PadInt " + uid +".");
                     Console.WriteLine("---");
+                    IPadInt padInt = dServer.remoteServer.load(uid);
+                    MyPadInt myPadInt = new MyPadInt(uid, padInt);
+                    addPadInt(myPadInt);
                     return padIntInfo;
                 }
                 else { //PadInt nao existe

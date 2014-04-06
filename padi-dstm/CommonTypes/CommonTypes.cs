@@ -47,7 +47,7 @@ namespace PADI_DSTM
         }
     }
 
-     [Serializable]
+    [Serializable]
     public class MyTransaction {
         // Transaction Info
         private int _txID;
@@ -96,9 +96,8 @@ namespace PADI_DSTM
         }
     }
 
+    public interface IMasterServer {
 
-    public interface IMasterServer
-    {
         IPadInt CreatePadInt(int uid);
         PadIntInfo AccessPadInt(int uid);
         void registerServer(String url);
@@ -110,10 +109,11 @@ namespace PADI_DSTM
         bool TxAbort(MyTransaction t);
         bool TxCommit(MyTransaction t);
         bool getDecision(MyTransaction t);
+        bool join(MyTransaction t);
     }
 
-    public interface IDataServer
-    {
+    public interface IDataServer {
+        
         IPadInt store(int uid);
         IPadInt load(int uid);
         String name{ get; set;}
@@ -123,16 +123,14 @@ namespace PADI_DSTM
         String Status();
         bool isFail { get; set; }
         bool isFreeze { get; set; }
+        
         bool canCommit(MyTransaction t);
         bool doCommit(MyTransaction t);
         bool doAbort(MyTransaction t);
         bool haveCommited(MyTransaction t);
     }
 
-
     public interface IClient {
 
     }
-
-
 }

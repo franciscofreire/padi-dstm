@@ -8,8 +8,11 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 
 namespace PADI_DSTM {
+
     namespace DataServer {
+
         class ServerTransaction {
+
             private String Client;
             private Hashtable copies;
 
@@ -30,6 +33,7 @@ namespace PADI_DSTM {
 
 
         class PadInt : MarshalByRefObject, IPadInt {
+            
             private int value;
 
             public int Read() {
@@ -63,6 +67,7 @@ namespace PADI_DSTM {
             private bool _isFreeze;
             private String _name;
             private String _url;
+            IMasterServer _masterServer;
 
             private Hashtable padInts = new Hashtable();
 
@@ -73,6 +78,12 @@ namespace PADI_DSTM {
                 _url = url;
                 _isFail = false;
                 _isFreeze = false;
+                String urlMaster = "tcp://localhost:9999/MasterServer";
+                _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
+            }
+
+            public void register() {
+                _masterServer.registerServer(_url);
             }
 
             public String name {
@@ -202,15 +213,9 @@ namespace PADI_DSTM {
             // commando para ele se juntar aos participantes de uma transacção!!!
             // aqui ou no master? :\
             public bool join(MyTransaction t) {
-                Console.WriteLine("[JOIN] Master Request.");
-                t.Participants.Add(URL);
-                Console.WriteLine("---");
-                
-                return false;
+                //TODO
+                return _masterServer.join(t); 
             }
-
-
-
 
             public bool canCommit(MyTransaction t) {
                 Console.WriteLine("[canCommit] Master Request.");
@@ -236,29 +241,7 @@ namespace PADI_DSTM {
                 return false;
             }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         }
-
 
         class Program {
 
@@ -276,20 +259,14 @@ namespace PADI_DSTM {
 
                 Server server = new Server(name1, url1);
                 RemotingServices.Marshal(server, name1, typeof(IDataServer));
+                server.register();
                 System.Console.WriteLine("Started " + name1 + "...");
                 
-
                 Server server2 = new Server(name2, url2);
                 RemotingServices.Marshal(server2, name2, typeof(IDataServer));
-                
+                server2.register();
                 System.Console.WriteLine("Started " + name2 + "...");
                 Console.WriteLine("---");
-
-                String urlMaster = "tcp://localhost:9999/MasterServer";
-                IMasterServer masterServer = (IMasterServer) Activator.GetObject(typeof(IMasterServer), urlMaster);
-                masterServer.registerServer(url1);
-                masterServer.registerServer(url2);
-
                 System.Console.ReadKey();
             }
         }

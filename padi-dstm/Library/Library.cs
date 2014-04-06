@@ -112,12 +112,6 @@ namespace PADI_DSTM
             }
         }
 
-
-
-
-
-
-
         public IPadInt CreatePadInt (int uid) {
             IPadInt obj = _masterServer.CreatePadInt(uid);
             if (obj == null) {
