@@ -82,7 +82,7 @@
       <Project>{C9156A5C-E4BB-4BD2-A047-D60E46B9D014}</Project>
       <Name>CommonTypes</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Library\PadiDstm.csproj">
+    <ProjectReference Include="..\PadiDstm\PadiDstm.csproj">
       <Project>{F9C8D0FE-51FE-4ACC-B9FC-F424B56258BF}</Project>
       <Name>PadiDstm</Name>
     </ProjectReference>
