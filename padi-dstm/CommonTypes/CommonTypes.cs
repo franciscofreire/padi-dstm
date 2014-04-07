@@ -62,6 +62,11 @@ namespace PADI_DSTM
             _participants = p;
         }
 
+        public MyTransaction(int tid)
+        {
+            _txID = tid;
+        }
+
         public int txID {
             get {
                 return _txID;
@@ -105,9 +110,9 @@ namespace PADI_DSTM
         Hashtable propagateStatus();
         String Status();
         
-        MyTransaction TxBegin(String clientUrl, ArrayList objs);
+        int TxBegin(String clientUrl);
         bool TxAbort(MyTransaction t);
-        bool TxCommit(MyTransaction t);
+        bool TxCommit(int txId);
         bool getDecision(MyTransaction t);
         bool join(MyTransaction t);
     }

@@ -9,16 +9,18 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 using System.Transactions;
 
-namespace PADI_DSTM
-{
+namespace PADI_DSTM {
+
     public class PadInt {
+
         private int uid;
         private IPadInt remoteObj;
         private PadiDstm padiDstm;
 
-        public PadInt(int uid, PadiDstm padiDstm) {
+        public PadInt(int uid, PadiDstm padiDstm, IPadInt remoteObj) {
             this.uid = uid;
             this.padiDstm = padiDstm;
+            this.remoteObj = remoteObj;
         }
 
         public int Read() {
@@ -74,13 +76,13 @@ namespace PADI_DSTM
             ChannelServices.RegisterChannel(channel, true);
             String urlMaster = "tcp://localhost:9999/MasterServer";
             _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
-            _masterServer.registerClient("tcp://localhost:9999"); 
+            _masterServer.registerClient("tcp://localhost:9910"); 
             return true;
         }
 
         public bool TxBegin() {
             try {
-                _tx = _masterServer.TxBegin(clientUrl, _myObjects);
+                txId = _masterServer.TxBegin("tcp://localhost:9910");
             } catch (TxException e){
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot begin.");
             }
@@ -89,7 +91,7 @@ namespace PADI_DSTM
         
         public bool TxCommit() {
             try { 
-            _masterServer.TxCommit(_tx);
+            _masterServer.TxCommit(txId);
             } catch (TxException e){
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot be commited.");
             }
@@ -97,6 +99,7 @@ namespace PADI_DSTM
         }
 
         public bool TxAbort() {
+            //TODO
             try {
             _masterServer.TxAbort(_tx);
             
@@ -112,50 +115,30 @@ namespace PADI_DSTM
             if (obj == null) {
                 return null;
             } else {
-                PadInt localPadInt = new PadInt(uid, this);
-                _myObjects.Add(obj);
-                return obj;
+                PadInt localPadInt = new PadInt(uid, this, obj);
+                return localPadInt;
             }
         }
 
         public IPadInt AccessPadInt(int uid) {
             PadIntInfo obj = _masterServer.AccessPadInt(uid);
             if (obj == null) {
-                // vem a null porque nao existe na tabela padInts do master sequer!
-                // excepção!
-                _accessedObj = null;
                 return null;
             }
             else if (!obj.hasPadInt()) {
                 IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
-                /*
-                if (dataServer.isFail) {
-                    //Console.WriteLine("Client " + clientUrl + " can't access PadInt " + uid + ": " + dataServer.name + "is set to Fail!");
-                    return null;
-                } else if (dataServer.isFreeze) {
-                    //Console.WriteLine("Client " + clientUrl + " can't access PadInt " + uid + ": " + dataServer.name + "is set to Freeze! Logging this command.");
-                   // dataServer.SaveCommand( ....... )
-                    return null;
-                } else { */
                 IPadInt padIntObj = dataServer.load(uid);
                 if (padIntObj == null) {
-                    // ATENCAO: Objecto pode vir a null (por nao existir - server nao responde (freeze?)!)
-                    // excepção!
-                    _accessedObj = null;
                     return null;
-                } else {
-                    _accessedObj = padIntObj;
-                    _myObjects.Add(padIntObj);
-                    return padIntObj;
+                    //TODO
                 }
-                //}
             } else {
-                _accessedObj = obj.PadInt;
                 _myObjects.Add(obj.PadInt);
                 return obj.PadInt;
+                //TODO
             }
         }
-
+     }
 
         public bool Status() {
             // limpa janela do status das cacas anteriores:

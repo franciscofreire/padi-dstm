@@ -251,21 +251,23 @@ namespace PADI_DSTM {
                 /*            ... E transacções ...                    */
 
             // interlocked -> ver: msdn.microsoft.com/en-us/library/dd78zt0c.aspx
-            public MyTransaction TxBegin(String clientUrl, ArrayList objs) {
+            public int TxBegin(String clientUrl) {
+                int txId;
                 Console.WriteLine("[TxBegin] Client request");
                 lock (this) {
-                    int txID = transactionId;
+                    txId = transactionId;
                     Interlocked.Increment(ref transactionId);
                     Transaction tx = new CommittableTransaction();
-                    MyTransaction t = new MyTransaction(txID, tx, objs, new ArrayList());
+                    MyTransaction t = new MyTransaction(txId);
                     clientTransactions.Add(clientUrl, t);
-                    Console.WriteLine("---");               
-                    return t;
+                    Console.WriteLine("---");
+                    return txId;
                 }
             }
 
-            public bool TxCommit(MyTransaction t) {
+            public bool TxCommit(int txId) {
                 Console.WriteLine("[TxCommit] Client request");
+                MyTransaction t; //TODO: get the right transaction 
                  foreach (IDataServer p in t.Participants){
                      _myCommitDecision = _myCommitDecision && p.canCommit(t);
                  }
