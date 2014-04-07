@@ -5,7 +5,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MasterServer", "MasterServer\MasterServer.csproj", "{335AA965-63C5-47B1-906A-0AB052EE93AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PadiDstm", "Library\PadiDstm.csproj", "{F9C8D0FE-51FE-4ACC-B9FC-F424B56258BF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PadiDstm", "PadiDstm\PadiDstm.csproj", "{F9C8D0FE-51FE-4ACC-B9FC-F424B56258BF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataServer", "DataServer\DataServer.csproj", "{B67FDACC-0CC6-4946-BC57-282A53A1AAB0}"
 EndProject
