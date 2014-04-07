@@ -9,8 +9,8 @@ using System.Transactions;
 namespace PADI_DSTM
 {
     public interface IPadInt {
-        int Read();
-        void Write(int value);
+        int Read(int txId);
+        void Write(int txId, int value);
     }
 
     [Serializable]
