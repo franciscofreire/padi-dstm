@@ -1,13 +1,11 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio Express 2013 for Windows Desktop
-VisualStudioVersion = 12.0.21005.1
-MinimumVisualStudioVersion = 10.0.40219.1
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{00D78557-C80C-47AB-8B2E-F615D3959D01}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MasterServer", "MasterServer\MasterServer.csproj", "{335AA965-63C5-47B1-906A-0AB052EE93AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Library", "Library\Library.csproj", "{F9C8D0FE-51FE-4ACC-B9FC-F424B56258BF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PadiDstm", "Library\PadiDstm.csproj", "{F9C8D0FE-51FE-4ACC-B9FC-F424B56258BF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataServer", "DataServer\DataServer.csproj", "{B67FDACC-0CC6-4946-BC57-282A53A1AAB0}"
 EndProject

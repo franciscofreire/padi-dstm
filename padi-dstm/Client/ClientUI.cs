@@ -14,7 +14,7 @@ namespace PADI_DSTM
         public partial class Form1 : Form
         {
 
-            private Library _lib;
+            private PadiDstm _lib;
             private IPadInt _accessedObj; // falta integrar com transacções
 
             public Form1()
@@ -24,7 +24,7 @@ namespace PADI_DSTM
 
             private void initButton_Click(object sender, EventArgs e) {
                 String url = "tcp://localhost:" + portTextBox.Text + "/" + nameTextBox.Text;
-                _lib = new Library(statusTextBox, url, Convert.ToInt32(portTextBox.Text));
+                _lib = new PadiDstm(statusTextBox, url, Convert.ToInt32(portTextBox.Text));
                 _lib.Init();
 
                 initButton.Enabled = false;

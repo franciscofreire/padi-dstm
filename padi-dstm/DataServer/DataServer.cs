@@ -36,7 +36,7 @@ namespace PADI_DSTM {
             
             private int value;
 
-            public int Read() {
+            public int Read(int txId) {
                 //TODO: Transaction control
                 // Se Cliente que me contactou nao esta numa transacao
                 //   registo-me junto do coordenador
@@ -44,7 +44,7 @@ namespace PADI_DSTM {
                 return value;
             }
 
-            public void Write(int value) {
+            public void Write(int txId, int value) {
                 //TODO: Transaction control
                 // Se Cliente que me contactou nao esta numa transacao
                 //   registo-me junto do coordenador
