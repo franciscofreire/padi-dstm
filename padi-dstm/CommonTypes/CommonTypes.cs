@@ -54,8 +54,7 @@ namespace PADI_DSTM
         PadIntInfo AccessPadInt(int uid);
         void registerServer(String url);
         void registerClient(String url);
-        Hashtable propagateStatus();
-        String Status();
+        void Status();
         
         int TxBegin(String clientUrl);
         bool TxAbort(int txId);

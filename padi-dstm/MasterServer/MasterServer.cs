@@ -159,25 +159,16 @@ namespace PADI_DSTM {
             private bool _myCommitDecision = true;
 
 
-            public String Status() {
+            public void Status() {
                 String text = "[I'm OK, I never fail!]";
                 Console.WriteLine("Server: " + "MasterServer" + " status: " + text);
-                return text;
+
+                foreach (DataServerInfo server in dataServers) {
+                    server.remoteServer.Status();             
+                }
             }
             
-            public Hashtable propagateStatus() {
-                String serverName, serverStatus;
-                Hashtable results = new Hashtable();
-                foreach (DataServerInfo server in dataServers) {
-                    serverName = server.remoteServer.name;
-                    serverStatus = server.remoteServer.Status();
-                    Console.WriteLine("Server: " + serverName + " status: " + serverStatus);
-                    results.Add(serverName, serverStatus);
-                }
-                Console.WriteLine("---");
-                return results;
-            }
-
+            
             public bool join(int txId, String url) {
                 MyTransaction tr;
                 //TODO testar se a transacao e servidor existem 
