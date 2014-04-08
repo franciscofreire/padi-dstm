@@ -12,7 +12,31 @@ using System.Transactions;
 namespace PADI_DSTM {
 
     namespace MasterServer {
-        
+
+        public class MyTransaction {
+            // Transaction Info
+            private int txId;
+            ArrayList participants;
+
+            public MyTransaction(int txId) {
+                this.txId = txId;
+            }
+            public int txID {
+                get {
+                    return txId;
+                }
+                set {
+                    txId = value;
+                }
+            }
+
+            public ArrayList Participants {
+                get {
+                    return participants;
+                }
+            }
+        }
+
         class Master : MarshalByRefObject, IMasterServer {
 
             private class DataServerInfo {
@@ -25,6 +49,10 @@ namespace PADI_DSTM {
                     _myRemoteServer = remoteServer;
                 }
 
+                public DataServerInfo(String url) {
+                    _myURL = url;
+                    _myRemoteServer = null;
+                }
                 public IDataServer remoteServer{
                     get {return _myRemoteServer;}
                     set {_myRemoteServer = value;}
@@ -34,6 +62,19 @@ namespace PADI_DSTM {
                     get { return _myURL;}
                     set {_myURL = value; }
                 }
+
+                public override bool Equals(Object obj) {
+                    if (obj == null || GetType() != obj.GetType())
+                        return false;
+
+                    DataServerInfo dsInfo = (DataServerInfo)obj;
+                    return _myURL.Equals(dsInfo.URL);
+                }
+
+                public override int GetHashCode() {
+                    return _myURL.GetHashCode();
+                }
+            
             }
 
             private class ClientInfo {
@@ -121,9 +162,9 @@ namespace PADI_DSTM {
             public String Status() {
                 String text = "[I'm OK, I never fail!]";
                 Console.WriteLine("Server: " + "MasterServer" + " status: " + text);
-                 return text;
+                return text;
             }
-
+            
             public Hashtable propagateStatus() {
                 String serverName, serverStatus;
                 Hashtable results = new Hashtable();
@@ -137,9 +178,23 @@ namespace PADI_DSTM {
                 return results;
             }
 
-            public bool join(MyTransaction t) {
-                //TODO
-                return false;
+            public bool join(int txId, String url) {
+                MyTransaction tr;
+                //TODO testar se a transacao e servidor existem 
+                tr = (MyTransaction)clientTransactions[txId];
+                DataServerInfo dsInfo = null;
+
+                foreach (DataServerInfo ds in dataServers) {
+                    if (ds.URL.Equals(url))
+                        dsInfo = ds;
+                } 
+
+                if (!tr.Participants.Contains(dsInfo)) {
+                    tr.Participants.Add(dsInfo);
+                    return true;
+                } else {
+                    return false;
+                }
             }
 
             private void addPadInt(MyPadInt obj)
@@ -269,25 +324,25 @@ namespace PADI_DSTM {
                 Console.WriteLine("[TxCommit] Client request");
                 MyTransaction t; //TODO: get the right transaction 
                  foreach (IDataServer p in t.Participants){
-                     _myCommitDecision = _myCommitDecision && p.canCommit(t);
+                     _myCommitDecision = _myCommitDecision && p.canCommit(t.txID);
                  }
                  if (_myCommitDecision) {
                      Console.WriteLine("[TxCommit] Every Server voted Yes");
                      foreach (IDataServer p in t.Participants) {
-                         p.doCommit(t);
+                         p.doCommit(t.txID);
                      }
                      foreach (IDataServer p in t.Participants) {
-                         if (!p.haveCommited(t)) {
+                         if (!p.haveCommited(t.txID)) {
                              Console.WriteLine("[TxCommit] Some server failed to commit! Need rollback and abort.");
                              _myCommitDecision = false;
                              // atencao: se algum ja fez commit mesmo, como é que agora aborta? rollback?
-                             p.doAbort(t);
+                             p.doAbort(t.txID);
                          }
                      }
                   } else {
                       Console.WriteLine("[TxCommit] Some Server voted No.");
                       _myCommitDecision = false;
-                      TxAbort(t);
+                      TxAbort(txId);
                   }
                  Console.WriteLine("---");  
                 return false;
@@ -299,13 +354,13 @@ namespace PADI_DSTM {
                 _myCommitDecision = false;
                 MyTransaction t; //TODO: get the right transaction
                 foreach (IDataServer p in t.Participants) {
-                    p.doAbort(t);
+                    p.doAbort(t.txID);
                 }
                 Console.WriteLine("---");  
                 return false;
             }
 
-            public bool getDecision(MyTransaction t) {
+            public bool getDecision(int txId) {
                 Console.WriteLine("[getDecision] Server Request.");
                 Console.WriteLine("---");  
                 return _myCommitDecision;
