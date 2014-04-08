@@ -16,24 +16,25 @@ namespace PADI_DSTM {
         public class MyTransaction {
             // Transaction Info
             private int txId;
-            ArrayList participants;
+            private ArrayList participants;
+            private String client;
 
-            public MyTransaction(int txId) {
+            public MyTransaction(int txId, String client) {
                 this.txId = txId;
+                this.client = Client;
+                this.participants = new ArrayList();
             }
-            public int txID {
-                get {
-                    return txId;
-                }
-                set {
-                    txId = value;
-                }
+
+            public String Client {
+                get { return client; }
+            }
+
+            public int TxId {
+                get { return txId; }
             }
 
             public ArrayList Participants {
-                get {
-                    return participants;
-                }
+                get { return participants; }
             }
         }
 
@@ -44,7 +45,7 @@ namespace PADI_DSTM {
                 private IDataServer _myRemoteServer;
                 private String _myURL;
 
-                public DataServerInfo(String url, IDataServer remoteServer){
+                public DataServerInfo(String url, IDataServer remoteServer) {
                     _myURL = url;
                     _myRemoteServer = remoteServer;
                 }
@@ -53,14 +54,14 @@ namespace PADI_DSTM {
                     _myURL = url;
                     _myRemoteServer = null;
                 }
-                public IDataServer remoteServer{
-                    get {return _myRemoteServer;}
-                    set {_myRemoteServer = value;}
+                public IDataServer remoteServer {
+                    get { return _myRemoteServer; }
+                    set { _myRemoteServer = value; }
                 }
 
-                public String URL{
-                    get { return _myURL;}
-                    set {_myURL = value; }
+                public String URL {
+                    get { return _myURL; }
+                    set { _myURL = value; }
                 }
 
                 public override bool Equals(Object obj) {
@@ -74,7 +75,7 @@ namespace PADI_DSTM {
                 public override int GetHashCode() {
                     return _myURL.GetHashCode();
                 }
-            
+
             }
 
             private class ClientInfo {
@@ -130,19 +131,21 @@ namespace PADI_DSTM {
                 }
             }
 
-            
+
             private const int CACHE_SIZE = 20;
 
             // Hashtable with information regarding objects' location
+            // Pair (int, ServerInfo)
             private Hashtable padInts = new Hashtable();
 
             // Hashtable - cache of PadInts
+            // Pair (int, IPadInt)
             private ArrayList padIntsCache = new ArrayList();
 
-            // ArrayList of Data Servers
+            // ArrayList of Data Servers (DataServerInfo)
             private ArrayList dataServers = new ArrayList();
 
-            //ArrayList of Clients
+            //ArrayList of Clients (ClientInfo)
             private ArrayList clients = new ArrayList();
 
             // Index for RoundRobin
@@ -152,10 +155,10 @@ namespace PADI_DSTM {
             // Transaction Id
             private static int transactionId = 0;
 
-            // Hashtable of clientUrls and their transactions
+            // Hashtable of tIds and their transactions
             Hashtable clientTransactions = new Hashtable();
 
-            // Voting decision for 2pc
+            // Voting decision for 2pc (maybe it should be an attribute of MyTransaction)
             private bool _myCommitDecision = true;
 
 
@@ -164,11 +167,11 @@ namespace PADI_DSTM {
                 Console.WriteLine("Server: " + "MasterServer" + " status: " + text);
 
                 foreach (DataServerInfo server in dataServers) {
-                    server.remoteServer.Status();             
+                    server.remoteServer.Status();
                 }
             }
-            
-            
+
+
             public bool join(int txId, String url) {
                 MyTransaction tr;
                 //TODO testar se a transacao e servidor existem 
@@ -178,7 +181,7 @@ namespace PADI_DSTM {
                 foreach (DataServerInfo ds in dataServers) {
                     if (ds.URL.Equals(url))
                         dsInfo = ds;
-                } 
+                }
 
                 if (!tr.Participants.Contains(dsInfo)) {
                     tr.Participants.Add(dsInfo);
@@ -188,8 +191,7 @@ namespace PADI_DSTM {
                 }
             }
 
-            private void addPadInt(MyPadInt obj)
-            {
+            private void addPadInt(MyPadInt obj) {
                 int size = padIntsCache.Count;
                 if (size == CACHE_SIZE) {
                     // remover o PadInt mais antigo
@@ -199,7 +201,7 @@ namespace PADI_DSTM {
                 padIntsCache.Add(obj);
             }
 
-            
+
             public IPadInt CreatePadInt(int uid) {
                 Console.WriteLine("[CREATE] Client wants to create PadInt with id " + uid);
                 if (!padInts.Contains(uid)) {
@@ -214,7 +216,7 @@ namespace PADI_DSTM {
                         // dServer.SaveCommand( ....... )
                         Console.WriteLine("---");
                         return null;
-                    }  
+                    }
                     IPadInt obj = dServer.remoteServer.store(uid);
                     // obj nao vem nunca a null porque controlámos isso nos ifs anteriores...
                     // Round Robin:
@@ -222,11 +224,11 @@ namespace PADI_DSTM {
                     padInts.Add(uid, dServer);
                     MyPadInt myPadInt = new MyPadInt(uid, obj);
                     addPadInt(myPadInt);
-                    Console.WriteLine("[CREATE] PadInt " + uid + " stored on " + dServer.remoteServer.name );
+                    Console.WriteLine("[CREATE] PadInt " + uid + " stored on " + dServer.remoteServer.name);
                     Console.WriteLine("---");
                     return obj;
                 } else {
-                    Console.WriteLine("[!CREATE] Error: PadInt " + uid + " already exists." );
+                    Console.WriteLine("[!CREATE] Error: PadInt " + uid + " already exists.");
                     Console.WriteLine("---");
                     return null;
                 }
@@ -244,23 +246,21 @@ namespace PADI_DSTM {
             public PadIntInfo AccessPadInt(int uid) {
                 Console.WriteLine("[ACCESS] Client requests PadInt with id " + uid);
                 if (padIntsCache.Contains(uid)) {
-                    IPadInt obj = (IPadInt) padIntsCache[uid];
+                    IPadInt obj = (IPadInt)padIntsCache[uid];
                     PadIntInfo padIntInfo = new PadIntInfo(obj);
-                    Console.WriteLine("[ACCESS] PadInt " + uid + " returned from the cache. " );
+                    Console.WriteLine("[ACCESS] PadInt " + uid + " returned from the cache. ");
                     Console.WriteLine("---");
                     return padIntInfo;
-                }
-                else if (padInts.Contains(uid)) {
+                } else if (padInts.Contains(uid)) {
                     DataServerInfo dServer = (DataServerInfo)padInts[uid];
                     PadIntInfo padIntInfo = new PadIntInfo(dServer.URL);
-                    Console.WriteLine("[ACCESS] Returned " + dServer.remoteServer.name + "'s URL, to further access PadInt " + uid +".");
+                    Console.WriteLine("[ACCESS] Returned " + dServer.remoteServer.name + "'s URL, to further access PadInt " + uid + ".");
                     Console.WriteLine("---");
                     IPadInt padInt = dServer.remoteServer.load(uid);
                     MyPadInt myPadInt = new MyPadInt(uid, padInt);
                     addPadInt(myPadInt);
                     return padIntInfo;
-                }
-                else { //PadInt nao existe
+                } else { //PadInt nao existe
                     Console.WriteLine("[!ACCESS] Error: PadInt " + uid + " does not exist.");
                     Console.WriteLine("---");
                     return null;
@@ -273,7 +273,7 @@ namespace PADI_DSTM {
                         return;
                 }
                 // obter referencia remota e registar servidor
-                IDataServer remoteServer = (IDataServer) Activator.GetObject(typeof(IDataServer), url);
+                IDataServer remoteServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
                 DataServerInfo serverInfo = new DataServerInfo(url, remoteServer);
                 dataServers.Add(serverInfo);
                 Console.WriteLine("Server " + remoteServer.name + " registered.");
@@ -294,7 +294,7 @@ namespace PADI_DSTM {
             }
 
             /* ------------------------ 2PC ------------------------------ */
-                /*            ... E transacções ...                    */
+            /*            ... E transacções ...                    */
 
             // interlocked -> ver: msdn.microsoft.com/en-us/library/dd78zt0c.aspx
             public int TxBegin(String clientUrl) {
@@ -304,8 +304,8 @@ namespace PADI_DSTM {
                     txId = transactionId;
                     Interlocked.Increment(ref transactionId);
                     Transaction tx = new CommittableTransaction();
-                    MyTransaction t = new MyTransaction(txId);
-                    clientTransactions.Add(clientUrl, t);
+                    MyTransaction t = new MyTransaction(txId, clientUrl);
+                    clientTransactions.Add(txId, t);
                     Console.WriteLine("---");
                     return txId;
                 }
@@ -313,47 +313,56 @@ namespace PADI_DSTM {
 
             public bool TxCommit(int txId) {
                 Console.WriteLine("[TxCommit] Client request");
-                MyTransaction t; //TODO: get the right transaction 
-                 foreach (IDataServer p in t.Participants){
-                     _myCommitDecision = _myCommitDecision && p.canCommit(t.txID);
-                 }
-                 if (_myCommitDecision) {
-                     Console.WriteLine("[TxCommit] Every Server voted Yes");
-                     foreach (IDataServer p in t.Participants) {
-                         p.doCommit(t.txID);
-                     }
-                     foreach (IDataServer p in t.Participants) {
-                         if (!p.haveCommited(t.txID)) {
-                             Console.WriteLine("[TxCommit] Some server failed to commit! Need rollback and abort.");
-                             _myCommitDecision = false;
-                             // atencao: se algum ja fez commit mesmo, como é que agora aborta? rollback?
-                             p.doAbort(t.txID);
-                         }
-                     }
-                  } else {
-                      Console.WriteLine("[TxCommit] Some Server voted No.");
-                      _myCommitDecision = false;
-                      TxAbort(txId);
-                  }
-                 Console.WriteLine("---");  
+
+                if (!clientTransactions.ContainsKey(txId)) {
+                    throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
+                }
+
+                MyTransaction t = (MyTransaction)clientTransactions[txId];
+                foreach (DataServerInfo p in t.Participants) {
+                    _myCommitDecision = _myCommitDecision && 
+                        p.remoteServer.canCommit(t.TxId);
+                }
+                if (_myCommitDecision) {
+                    Console.WriteLine("[TxCommit] Every Server voted Yes");
+                    foreach (DataServerInfo p in t.Participants) {
+                        p.remoteServer.doCommit(t.TxId);
+                    }
+                    foreach (DataServerInfo p in t.Participants) {
+                        if (!p.remoteServer.haveCommited(t.TxId)) {
+                            Console.WriteLine("[TxCommit] Some server failed to commit! Need rollback and abort.");
+                            _myCommitDecision = false;
+                            // atencao: se algum ja fez commit mesmo, como é que agora aborta? rollback?
+                            p.remoteServer.doAbort(t.TxId);
+                        }
+                    }
+                } else {
+                    Console.WriteLine("[TxCommit] Some Server voted No.");
+                    _myCommitDecision = false;
+                    TxAbort(txId);
+                }
+                Console.WriteLine("---");
                 return false;
             }
 
 
             public bool TxAbort(int txId) {
                 Console.WriteLine("[TxAbort] Client Request.");
-                _myCommitDecision = false;
-                MyTransaction t; //TODO: get the right transaction
-                foreach (IDataServer p in t.Participants) {
-                    p.doAbort(t.txID);
+                if (!clientTransactions.ContainsKey(txId)) {
+                    throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
                 }
-                Console.WriteLine("---");  
+                MyTransaction t = (MyTransaction)clientTransactions[txId];
+                _myCommitDecision = false;
+                foreach (DataServerInfo p in t.Participants) {
+                    p.remoteServer.doAbort(t.TxId);
+                }
+                Console.WriteLine("---");
                 return false;
             }
 
             public bool getDecision(int txId) {
                 Console.WriteLine("[getDecision] Server Request.");
-                Console.WriteLine("---");  
+                Console.WriteLine("---");
                 return _myCommitDecision;
             }
         }

@@ -34,7 +34,7 @@ namespace PADI_DSTM {
                 throw new TxException(uid, "Write operation at PadInt " +
                                           uid + " Failed. No active Transaction");
             }
-            remoteObj.Read(PadiDstm.txId);
+            remoteObj.Write(PadiDstm.txId, value);
         }
     }
 
