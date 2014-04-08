@@ -294,9 +294,10 @@ namespace PADI_DSTM {
             }
 
 
-            public bool TxAbort(MyTransaction t) {
+            public bool TxAbort(int txId) {
                 Console.WriteLine("[TxAbort] Client Request.");
                 _myCommitDecision = false;
+                MyTransaction t; //TODO: get the right transaction
                 foreach (IDataServer p in t.Participants) {
                     p.doAbort(t);
                 }

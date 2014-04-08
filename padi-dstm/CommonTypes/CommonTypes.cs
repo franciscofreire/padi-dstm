@@ -62,8 +62,7 @@ namespace PADI_DSTM
             _participants = p;
         }
 
-        public MyTransaction(int tid)
-        {
+        public MyTransaction(int tid) {
             _txID = tid;
         }
 
@@ -111,7 +110,7 @@ namespace PADI_DSTM
         String Status();
         
         int TxBegin(String clientUrl);
-        bool TxAbort(MyTransaction t);
+        bool TxAbort(int txId);
         bool TxCommit(int txId);
         bool getDecision(MyTransaction t);
         bool join(MyTransaction t);

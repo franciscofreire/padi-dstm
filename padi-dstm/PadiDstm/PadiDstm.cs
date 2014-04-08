@@ -24,93 +24,91 @@ namespace PADI_DSTM {
         }
 
         public int Read() {
-            if (padiDstm.TxId == -1) {
+            if (PadiDstm.txId == -1) {
                 throw new TxException(uid, "Read operation at PadInt " +
                                           uid + " Failed. No active Transaction"); 
             }
-            return remoteObj.Read(padiDstm.TxId);
+            return remoteObj.Read(PadiDstm.txId);
         }
     
         public void Write(int value) {
-            if (padiDstm.TxId == -1)
-            {
+            if (PadiDstm.txId == -1) {
                 throw new TxException(uid, "Write operation at PadInt " +
                                           uid + " Failed. No active Transaction");
             }
-            remoteObj.Read(padiDstm.TxId);
+            remoteObj.Read(PadiDstm.txId);
         }
     }
 
-    public static class PadiDstm  {
-
-        // Delegates for Form's TextBox manipulation
-        delegate void ClearTextDel();
-        delegate void UpdateTextDel(String msg);
-
-        // TextBox to dump status
-        private TextBox _statusBox;
-
-        // All the PadInt objects accessed by this client (target objects for Read/Write)
-        private ArrayList _myObjects;
-
+    public class PadiDstm  {
         // Current transaction from this client
-        private int txId = -1;
+        public static int txId;
 
-        public int TxId {
-            get { return txId; }
-        }
+        public const String urlMaster = "tcp://localhost:9999/MasterServer";
+        public const String clientUrl = "tcp://localhost:9910";
 
         // TCP Channel
-        private TcpChannel channel;
+        public static TcpChannel channel;
 
         // MasterServer remote object
-        private IMasterServer _masterServer;
+        public static IMasterServer _masterServer;
 
-        public IMasterServer MasterServer
-        {
-            get { return _masterServer; }
-        }
-
-        public bool Init() {
-            channel = new TcpChannel(9010);
-            ChannelServices.RegisterChannel(channel, true);
-            String urlMaster = "tcp://localhost:9999/MasterServer";
-            _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
-            _masterServer.registerClient("tcp://localhost:9910"); 
-            return true;
-        }
-
-        public bool TxBegin() {
+        
+        public static bool Init() {
             try {
-                txId = _masterServer.TxBegin("tcp://localhost:9910");
+                txId = -1;
+                channel = new TcpChannel(9010);
+                ChannelServices.RegisterChannel(channel, true);
+                _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
+                _masterServer.registerClient(clientUrl); 
+                return true;
+            } catch(Exception e) {
+                Console.WriteLine("Init Exception:" + e);
+                return false;
+            }
+        }
+
+        public static bool TxBegin() {
+            if (txId != -1) {
+                throw new TxException(txId, "Cannot start new transaction." +
+                    "Transaction with id" + txId + "is active");
+            }
+            try {
+                txId = _masterServer.TxBegin(clientUrl);
+                return true;
             } catch (TxException e){
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot begin.");
-            }
-            return false;
+                return false;
+            }   
         }
         
-        public bool TxCommit() {
+        public static bool TxCommit() {
+            if (txId == -1) {
+                throw new TxException(txId, "Cannot commit. No active Transaction");
+            }
             try { 
-            _masterServer.TxCommit(txId);
+                _masterServer.TxCommit(txId);
+                return true;
             } catch (TxException e){
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot be commited.");
+                return false;
             }
-            return false;
         }
 
-        public bool TxAbort() {
-            //TODO
+        public static bool TxAbort() {
+            if (txId == -1) {
+                throw new TxException(txId, "Cannot abort. No active Transaction");
+            }
             try {
-            _masterServer.TxAbort(_tx);
-            
+                _masterServer.TxAbort(txId);
+                return true;
             } catch (TxException e){
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot be aborted.");
-                
+                return false;
             }
-            return false;
         }
 
-        public PadInt CreatePadInt (int uid) {
+        public static PadInt CreatePadInt (int uid) {
             IPadInt obj = _masterServer.CreatePadInt(uid);
             if (obj == null) {
                 return null;
@@ -120,56 +118,60 @@ namespace PADI_DSTM {
             }
         }
 
-        public IPadInt AccessPadInt(int uid) {
+        public static PadInt AccessPadInt(int uid) {
+            IPadInt padIntObj;
             PadIntInfo obj = _masterServer.AccessPadInt(uid);
             if (obj == null) {
                 return null;
             }
-            else if (!obj.hasPadInt()) {
+
+            if (!obj.hasPadInt()) { // Catch remoting exception
                 IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
-                IPadInt padIntObj = dataServer.load(uid);
-                if (padIntObj == null) {
-                    return null;
-                    //TODO
-                }
+                padIntObj = dataServer.load(uid);
             } else {
-                _myObjects.Add(obj.PadInt);
-                return obj.PadInt;
-                //TODO
+                padIntObj = obj.PadInt;
+            }
+            PadInt localPadInt = new PadInt(uid, this, padIntObj);
+            return localPadInt;
+        }
+
+        public static bool Status() {
+            try {
+                _masterServer.Status();
+                return true;
+            } catch (TxException e) {
+                Console.WriteLine("Status error: " + e);
+                return false;
             }
         }
-     }
 
-        public bool Status() {
-            // limpa janela do status das cacas anteriores:
-            _statusBox.Invoke(new ClearTextDel(_statusBox.Clear));
-            String text = "Node " + "MasterServer" + " is set to " + _masterServer.Status() + " Mode.";
-            //Console.WriteLine(text);
-            String line = text + "\r\n";
-            _statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
-            Hashtable results = _masterServer.propagateStatus();
-            foreach (DictionaryEntry s in results) {
-                text = "Node " + s.Key + " is set to " + s.Value + " Mode.";
-                //Console.WriteLine(text);
-                line = text + "\r\n";
-                _statusBox.Invoke(new UpdateTextDel(_statusBox.AppendText), new object[] { line });
+        public static bool Fail(string URL) {
+            try {
+                IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
+                dataServer.Fail(); // return true;
+                return true;
+            } catch (Exception e) { //TODO: Improve the catch
+                return false;
             }
-            return false; // ?
         }
-        
-        public bool Fail(string URL) {
-            IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
-            return dataServer.Fail(); // return true;
-        }
-
-        public bool Freeze(string URL) {
-            IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
-            return dataServer.Freeze(); // return true;
+        public static bool Freeze(string URL) {
+            try {
+                IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
+                dataServer.Freeze();
+                return true;
+            } catch (Exception e) { //TODO: Improve the catch
+                return false;
+            }
         }
 
-        public bool Recover(string URL) {
-            IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
-            return dataServer.Recover(); //returns true if success, false if the server was not in Fail or Freeze
+        public static bool Recover(string URL) {
+            try {
+                IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
+                dataServer.Freeze(); 
+                return true;
+            } catch (Exception e) { //TODO: Improve the catch
+                return false;
+            }
         }
     }
 }
