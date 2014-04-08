@@ -47,58 +47,6 @@ namespace PADI_DSTM
         }
     }
 
-    [Serializable]
-    public class MyTransaction {
-        // Transaction Info
-        private int _txID;
-        private Transaction _tx; // CommittableTransaction ?
-        private ArrayList _txObjs;
-        ArrayList _participants;
-
-        public MyTransaction(int tid, Transaction tx, ArrayList txObjs, ArrayList p) {
-            _txID = tid;
-            _tx = tx;
-            _txObjs = txObjs;
-            _participants = p;
-        }
-
-        public MyTransaction(int tid) {
-            _txID = tid;
-        }
-
-        public int txID {
-            get {
-                return _txID;
-            }
-            set {
-                _txID = value;
-            }
-        }
-
-        public Transaction tx {
-            get {
-                return _tx;
-            }
-            set {
-                _tx = value;
-            }
-        }
-
-        public ArrayList txObjs {
-            get {
-                return _txObjs;
-            }
-            /* set {
-                _txObjs = value;
-            } */
-        }
-
-        public ArrayList Participants {
-            get {
-                return _participants;
-            }
-        }
-    }
 
     public interface IMasterServer {
 
@@ -112,8 +60,8 @@ namespace PADI_DSTM
         int TxBegin(String clientUrl);
         bool TxAbort(int txId);
         bool TxCommit(int txId);
-        bool getDecision(MyTransaction t);
-        bool join(MyTransaction t);
+        bool getDecision(int txId);
+        bool join(int txId, String url);
     }
 
     public interface IDataServer {
@@ -128,10 +76,10 @@ namespace PADI_DSTM
         bool isFail { get; set; }
         bool isFreeze { get; set; }
         
-        bool canCommit(MyTransaction t);
-        bool doCommit(MyTransaction t);
-        bool doAbort(MyTransaction t);
-        bool haveCommited(MyTransaction t);
+        bool canCommit(int txId);
+        bool doCommit(int txId);
+        bool doAbort(int txId);
+        bool haveCommited(int txId);
     }
 
     public interface IClient {
