@@ -17,7 +17,7 @@ namespace PADI_DSTM
         {
 
 
-            private int value;
+            private int value = 0;
             private Server srv;
 
             public PadInt(Server srv)
@@ -88,7 +88,6 @@ namespace PADI_DSTM
             public class ServerTransaction
             {
 
-                private String Client;
                 private Hashtable copies;
 
                 public Hashtable Copies
@@ -404,36 +403,66 @@ namespace PADI_DSTM
 
                 // commando para ele se juntar aos participantes de uma transacção!!!
                 // aqui ou no master? :\
-                public bool join(MyTransaction t)
+               
+
+                public bool canCommit(int TxId)
                 {
-                    //TODO
-                    return _masterServer.join(t);
+                    Console.WriteLine("[canCommit] Master Request with id: ." + TxId);
+                    Console.WriteLine("---");
+                    if (!this.Transactions.ContainsKey(TxId))
+                    {
+                        Console.WriteLine("Error transaction not found");
+                        return false;
+
+                    }
+
+   
+                    return true;
                 }
 
-                public bool canCommit(MyTransaction t)
+                public bool doCommit(int TxId)
                 {
-                    Console.WriteLine("[canCommit] Master Request.");
+                    Console.WriteLine("[doCommit] Master Request. with id: " + TxId);
                     Console.WriteLine("---");
+                    if (!this.Transactions.ContainsKey(TxId))
+                    {
+                        Console.WriteLine("Error transaction not found : "+ TxId);
+                        return false;
+                    }
+
+                    ServerTransaction transaction = (ServerTransaction) transactions[TxId];
+
+                    foreach (DictionaryEntry pair in transactions)
+                    {
+                        PadInt padInt = (PadInt) pair.Key;
+                        int value = (int) pair.Value;
+                        padInt.Value = value;
+                    }
+                   
+
+
+                   
                     return false;
                 }
 
-                public bool doCommit(MyTransaction t)
+                public bool doAbort(int TxId)
                 {
-                    Console.WriteLine("[doCommit] Master Request.");
+                    Console.WriteLine("[doAbort] Master Request. id: " + TxId);
                     Console.WriteLine("---");
-                    return false;
+
+                    if (!this.Transactions.ContainsKey(TxId))
+                    {
+                        Console.WriteLine("Error transaction not found : " + TxId);
+                        return false;
+                    }
+
+                    transactions.Remove(TxId);
+                    return true;
                 }
 
-                public bool doAbort(MyTransaction t)
+                public bool haveCommited(int TxId)
                 {
-                    Console.WriteLine("[doAbort] Master Request.");
-                    Console.WriteLine("---");
-                    return false;
-                }
-
-                public bool haveCommited(MyTransaction t)
-                {
-                    Console.WriteLine("[haveCommitted] Master Request.");
+                    Console.WriteLine("[haveCommitted] Master Request."+ TxId);
                     Console.WriteLine("---");
                     return false;
                 }
