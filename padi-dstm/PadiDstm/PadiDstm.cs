@@ -86,6 +86,7 @@ namespace PADI_DSTM {
             }
             try {
                 masterServer.TxCommit(txId);
+                txId = -1;
                 return true;
             } catch (TxException e) {
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot be commited.");
@@ -99,6 +100,7 @@ namespace PADI_DSTM {
             }
             try {
                 masterServer.TxAbort(txId);
+                txId = -1;
                 return true;
             } catch (TxException e) {
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot be aborted.");
