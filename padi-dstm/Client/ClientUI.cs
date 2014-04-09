@@ -6,13 +6,20 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Collections;
+
 
 namespace PADI_DSTM {
     namespace Client {
         public partial class Form1 : Form {
 
-            private PadiDstm _lib;
-            private IPadInt _accessedObj; // falta integrar com transacções
+            //private PadiDstm _lib;
+
+            //associates uid's with PadInt objects
+            private Hashtable myObjects = new Hashtable();
+           
+            // object created
+            private PadInt _createdObj;
 
             public Form1() {
                 InitializeComponent();
@@ -21,55 +28,80 @@ namespace PADI_DSTM {
             private void initButton_Click(object sender, EventArgs e) {
                 //String url = "tcp://localhost:" + portTextBox.Text + "/" + nameTextBox.Text;
                 //_lib.Init();
-
-                //initButton.Enabled = false;
+                PadiDstm.Init();
+                initButton.Enabled = false;
             }
 
             private void createButton_Click(object sender, EventArgs e) {
+                _createdObj = PadiDstm.CreatePadInt(Convert.ToInt32(createTextBox.Text));
                 //_accessedObj = _lib.CreatePadInt(Convert.ToInt32(createTextBox.Text)); 
+            
             }
 
             private void accessButton_Click(object sender, EventArgs e) {
-                //_accessedObj = _lib.AccessPadInt(Convert.ToInt32(accessTextBox.Text));
+                _createdObj = PadiDstm.AccessPadInt(Convert.ToInt32(accessTextBox.Text));
+                myObjects.Add(Convert.ToInt32(accessTextBox.Text), _createdObj);
+                listBox.Items.Add("Id:" + Convert.ToInt32(accessTextBox.Text));
             }
 
             private void txBeginButton_Click(object sender, EventArgs e) {
-                //_lib.TxBegin();
+                PadiDstm.TxBegin();
+                txBeginButton.Enabled = false;
             }
 
             private void txCommitButton_Click(object sender, EventArgs e) {
-                //_lib.TxCommit();
+                PadiDstm.TxCommit();
+                txBeginButton.Enabled = true;
             }
 
             private void txAbortButton_Click(object sender, EventArgs e) {
-                //_lib.TxAbort();
+                PadiDstm.TxAbort();
+                txBeginButton.Enabled = true;
             }
 
             private void failButton_Click(object sender, EventArgs e) {
-                //_lib.Fail(failTextBox.Text.ToString());
+                PadiDstm.Fail(failTextBox.Text.ToString());
             }
 
             private void freezeButton_Click(object sender, EventArgs e) {
-                //_lib.Freeze(freezeTextBox.Text.ToString());
+                PadiDstm.Freeze(freezeTextBox.Text.ToString());
             }
 
             private void recoverButton_Click(object sender, EventArgs e) {
-                //_lib.Recover(recoverTextBox.Text.ToString());
+                PadiDstm.Recover(recoverTextBox.Text.ToString());
             }
 
             private void statusButton_Click(object sender, EventArgs e) {
-                //_lib.Status();
+                // sabemos que não faz nada
+                PadiDstm.Status();
             }
 
             private void readButton_Click(object sender, EventArgs e) {
-                //    // falta integrar com transacções
-                //    int value = _accessedObj.Read();
-                //    readTextBox.Text = value.ToString();
+                // falta integrar com transacções
+                String selectedItem = listBox.SelectedItem.ToString();
+                string[] parser = selectedItem.Split(':');
+                int uid = Convert.ToInt32(parser[1]);
+
+                PadInt obj = (PadInt) myObjects[uid];
+                
+                int value = obj.Read();
+                
+                //    int value = _accessedObj.Read(listBox.SelectedItem.ToString());
+                readTextBox.Text = value.ToString();
+                listBox.ClearSelected();
             }
 
             private void writeButton_Click(object sender, EventArgs e) {
                 // falta integrar com transacções
                 //_accessedObj.Write(Convert.ToInt32(writeTextBox.Text));
+                String selectedItem = listBox.SelectedItem.ToString();
+                string[] parser = selectedItem.Split(':');
+                int uid = Convert.ToInt32(parser[1]);
+
+                PadInt obj = (PadInt)myObjects[uid];
+                obj.Write(Convert.ToInt32(writeTextBox.Text));
+
+                listBox.ClearSelected();
             }
 
         }
