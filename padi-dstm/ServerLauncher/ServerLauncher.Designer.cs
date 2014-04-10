@@ -32,6 +32,7 @@
             this.LaunchMaster = new System.Windows.Forms.Button();
             this.SampleAppButton = new System.Windows.Forms.Button();
             this.ClientGUIbutton = new System.Windows.Forms.Button();
+            this.KillAll = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // ServerUrl
@@ -113,11 +114,23 @@
             this.ClientGUIbutton.UseVisualStyleBackColor = true;
             this.ClientGUIbutton.Click += new System.EventHandler(this.ClientGUIbutton_Click);
             // 
+            // KillAll
+            // 
+            this.KillAll.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))));
+            this.KillAll.Location = new System.Drawing.Point(472, 81);
+            this.KillAll.Name = "KillAll";
+            this.KillAll.Size = new System.Drawing.Size(94, 23);
+            this.KillAll.TabIndex = 8;
+            this.KillAll.Text = "Kill All";
+            this.KillAll.UseVisualStyleBackColor = true;
+            this.KillAll.Click += new System.EventHandler(this.KillAll_Click);
+            // 
             // ServerLauncher
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(578, 116);
+            this.Controls.Add(this.KillAll);
             this.Controls.Add(this.ClientGUIbutton);
             this.Controls.Add(this.SampleAppButton);
             this.Controls.Add(this.LaunchMaster);
@@ -144,6 +157,7 @@
         private System.Windows.Forms.Button LaunchMaster;
         private System.Windows.Forms.Button SampleAppButton;
         private System.Windows.Forms.Button ClientGUIbutton;
+        private System.Windows.Forms.Button KillAll;
     }
 }
 
