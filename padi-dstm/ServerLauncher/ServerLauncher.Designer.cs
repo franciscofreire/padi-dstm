@@ -30,6 +30,8 @@
             this.PortLabel = new System.Windows.Forms.Label();
             this.LaunchButton = new System.Windows.Forms.Button();
             this.LaunchMaster = new System.Windows.Forms.Button();
+            this.SampleAppButton = new System.Windows.Forms.Button();
+            this.ClientGUIbutton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // ServerUrl
@@ -81,7 +83,7 @@
             // LaunchMaster
             // 
             this.LaunchMaster.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))));
-            this.LaunchMaster.Location = new System.Drawing.Point(472, 81);
+            this.LaunchMaster.Location = new System.Drawing.Point(12, 81);
             this.LaunchMaster.Name = "LaunchMaster";
             this.LaunchMaster.Size = new System.Drawing.Size(94, 23);
             this.LaunchMaster.TabIndex = 5;
@@ -89,11 +91,35 @@
             this.LaunchMaster.UseVisualStyleBackColor = true;
             this.LaunchMaster.Click += new System.EventHandler(this.LaunchMaster_Click);
             // 
+            // SampleAppButton
+            // 
+            this.SampleAppButton.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))));
+            this.SampleAppButton.Location = new System.Drawing.Point(132, 81);
+            this.SampleAppButton.Name = "SampleAppButton";
+            this.SampleAppButton.Size = new System.Drawing.Size(120, 23);
+            this.SampleAppButton.TabIndex = 6;
+            this.SampleAppButton.Text = "Launch SampleApp";
+            this.SampleAppButton.UseVisualStyleBackColor = true;
+            this.SampleAppButton.Click += new System.EventHandler(this.SampleAppButton_Click);
+            // 
+            // ClientGUIbutton
+            // 
+            this.ClientGUIbutton.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(192)))));
+            this.ClientGUIbutton.Location = new System.Drawing.Point(276, 81);
+            this.ClientGUIbutton.Name = "ClientGUIbutton";
+            this.ClientGUIbutton.Size = new System.Drawing.Size(120, 23);
+            this.ClientGUIbutton.TabIndex = 7;
+            this.ClientGUIbutton.Text = "Launch Client GUI";
+            this.ClientGUIbutton.UseVisualStyleBackColor = true;
+            this.ClientGUIbutton.Click += new System.EventHandler(this.ClientGUIbutton_Click);
+            // 
             // ServerLauncher
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(578, 116);
+            this.Controls.Add(this.ClientGUIbutton);
+            this.Controls.Add(this.SampleAppButton);
             this.Controls.Add(this.LaunchMaster);
             this.Controls.Add(this.LaunchButton);
             this.Controls.Add(this.PortLabel);
@@ -116,6 +142,8 @@
         private System.Windows.Forms.Label PortLabel;
         private System.Windows.Forms.Button LaunchButton;
         private System.Windows.Forms.Button LaunchMaster;
+        private System.Windows.Forms.Button SampleAppButton;
+        private System.Windows.Forms.Button ClientGUIbutton;
     }
 }
 

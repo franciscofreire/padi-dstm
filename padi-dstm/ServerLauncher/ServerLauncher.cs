@@ -30,5 +30,17 @@ namespace WindowsFormsApplication1 {
             startInfo.FileName = @"..\..\..\MasterServer\bin\Debug\MasterServer.exe";
             Process.Start(startInfo);
         }
+
+        private void SampleAppButton_Click(object sender, EventArgs e) {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = @"..\..\..\SampleApp\bin\Debug\SampleApp.exe";
+            Process.Start(startInfo);
+        }
+
+        private void ClientGUIbutton_Click(object sender, EventArgs e) {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = @"..\..\..\Client\bin\Debug\Client.exe";
+            Process.Start(startInfo);
+        }
     }
 }
