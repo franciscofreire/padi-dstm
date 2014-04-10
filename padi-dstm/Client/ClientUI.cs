@@ -40,8 +40,10 @@ namespace PADI_DSTM {
 
             private void accessButton_Click(object sender, EventArgs e) {
                 _createdObj = PadiDstm.AccessPadInt(Convert.ToInt32(accessTextBox.Text));
-                myObjects.Add(Convert.ToInt32(accessTextBox.Text), _createdObj);
-                listBox.Items.Add("Id:" + Convert.ToInt32(accessTextBox.Text));
+                if (!(_createdObj == null)) {
+                    myObjects.Add(Convert.ToInt32(accessTextBox.Text), _createdObj);
+                    listBox.Items.Add("Id:" + Convert.ToInt32(accessTextBox.Text));
+                }
             }
 
             private void txBeginButton_Click(object sender, EventArgs e) {
