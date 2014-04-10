@@ -381,7 +381,7 @@ namespace PADI_DSTM {
                     padInt.Value = value;
                 }
 
-                return false;
+                return true;
             }
 
             public bool doAbort(int TxId) {
