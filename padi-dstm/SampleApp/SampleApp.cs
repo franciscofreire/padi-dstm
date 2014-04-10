@@ -2,9 +2,7 @@
 using PADI_DSTM;
 
 class SampleApp {
-    
 
-    /*
     static void Main(string[] args) {
         bool res;
 
@@ -29,5 +27,4 @@ class SampleApp {
         res = PadiDstm.Fail("tcp://localhost:2002/Server");
         res = PadiDstm.TxCommit();
     }
-     */
 }

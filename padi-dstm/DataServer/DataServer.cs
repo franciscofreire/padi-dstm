@@ -7,6 +7,7 @@ using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 using System.Threading;
+using System.Net.Sockets;
 
 namespace PADI_DSTM {
 
@@ -52,8 +53,7 @@ namespace PADI_DSTM {
                     ServerTransaction tr = (ServerTransaction)myServer.Transactions[txId];
                     tr.Add(this);
                     tr.Set(this, value);
-                }
-                else {
+                } else {
                     ServerTransaction tr = (ServerTransaction)myServer.Transactions[txId];
                     tr.Set(this, value);
                 }
@@ -82,7 +82,7 @@ namespace PADI_DSTM {
                     myServer.MasterServer.join(txId, myServer.URL);
                     Console.WriteLine("[Read] Transaction " + txId + " created in " + myServer.name);
                     return this.value;
-                } else if(!(((ServerTransaction) myServer.Transactions[txId]).Copies.ContainsKey(this))){
+                } else if (!(((ServerTransaction)myServer.Transactions[txId]).Copies.ContainsKey(this))) {
                     ServerTransaction tr = (ServerTransaction)myServer.Transactions[txId];
                     tr.Add(this);
                     return this.value;
@@ -257,14 +257,16 @@ namespace PADI_DSTM {
 
             public String Status() {
                 if (isFail) {
-                    return "[Fail]";
+                    Console.WriteLine(_name + " Status: [Fail].");
+                    return _name + " Status: [Fail].";
                 } else if (isFreeze) {
-                    return "[Freeze]";
+                    Console.WriteLine(_name + " Status: [Freeze].");
+                    return _name + " Status: [Freeze].";
                 } else {
-                    return "[OK]";
+                    Console.WriteLine(_name + " Status: [OK].");
+                    return _name + " Status: [OK].";
                 }
             }
-
 
             public IPadInt store(int uid) {
                 if (isFail) {
@@ -430,31 +432,50 @@ namespace PADI_DSTM {
         class Program {
 
             static void Main(string[] args) {
+                int port = 0;
+                TcpChannel channel = null;
 
-                /*if (args.Count() != 1) {
+                if (args.Count() == 0) {
+                    Console.WriteLine("Invoked with no argumments.");
+                    Console.WriteLine("Trying to assign port in range 2001...65535");
+                    port = 2001;
+                    while (channel == null) {
+                        try {
+                            channel = new TcpChannel(port);
+                        } catch (SocketException) {
+                            port++;
+                        }
+                    }
+                } else if (args.Count() == 1) {
+                    try {
+                        port = Convert.ToInt32(args[0]);
+                        channel = new TcpChannel(port);
+                    } catch (FormatException fe) {
+                        Console.WriteLine("Malformed Args: " + args[0]);
+                        Console.WriteLine(fe);
+                        Console.WriteLine("Press any key to exit...");
+                        Console.ReadKey();
+                        return;
+                    }
+                } else {
                     Console.WriteLine("usage: DataServer.exe " + "<port>");
+                    Console.WriteLine("Press any key to exit...");
                     Console.ReadKey();
                     return;
-                }*/
-
-                try {
-                    int port = Convert.ToInt32("2001");
-                    TcpChannel channel = new TcpChannel(port);
-                    ChannelServices.RegisterChannel(channel, true);
-                    String name = "Server";
-                    String url = "tcp://localhost:" + port + "/" + name;
-
-                    String ServerName = name + "At" + port;
-                    Server server = new Server(ServerName, url);
-                    RemotingServices.Marshal(server, name, typeof(IDataServer));
-                    server.register();
-                    Console.WriteLine("Started " + ServerName + "...");
-                    Console.WriteLine("---");
-                    Console.ReadKey();
-                } catch (FormatException fe) {
-                    Console.WriteLine("Malformed Args: " + args[0]);
-                    Console.WriteLine(fe);
                 }
+
+
+                ChannelServices.RegisterChannel(channel, true);
+                String name = "Server";
+                String url = "tcp://localhost:" + port + "/" + name;
+
+                String ServerName = name + "At" + port;
+                Server server = new Server(ServerName, url);
+                RemotingServices.Marshal(server, name, typeof(IDataServer));
+                server.register();
+                Console.WriteLine("Started " + ServerName + "...");
+                Console.WriteLine("---");
+                Console.ReadKey();
             }
         }
     }

@@ -162,13 +162,13 @@ namespace PADI_DSTM {
             private bool _myCommitDecision = true;
 
 
-            public void Status() {
-                String text = "[I'm OK, I never fail!]";
-                Console.WriteLine("Server: " + "MasterServer" + " status: " + text);
+            public String Status() {
+                String text = "[I'm OK, I never fail!]\n";
 
                 foreach (DataServerInfo server in dataServers) {
-                    server.remoteServer.Status();
+                    text += server.remoteServer.Status() + "\n";
                 }
+                return text;
             }
 
 
