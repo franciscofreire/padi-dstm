@@ -47,7 +47,7 @@ namespace PADI_DSTM {
         public static int txId;
 
         public const String urlMaster = "tcp://localhost:9999/MasterServer";
-        public const String clientUrl = "tcp://localhost:9910";
+        public static String clientUrl;
 
         // TCP Channel
         public static TcpChannel channel;
@@ -63,6 +63,8 @@ namespace PADI_DSTM {
                 channel = new TcpChannel(0);
                 ChannelServices.RegisterChannel(channel, true);
                 masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
+                ChannelDataStore data = (ChannelDataStore)channel.ChannelData;
+                clientUrl = (String)data.ChannelUris[0];
                 masterServer.registerClient(clientUrl);
                 return true;
             } catch (Exception e) {
