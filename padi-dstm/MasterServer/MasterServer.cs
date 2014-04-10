@@ -163,10 +163,10 @@ namespace PADI_DSTM {
 
 
             public String Status() {
-                String text = "[I'm OK, I never fail!]\n";
+                String text = "MasterServer Status: [OK, I never fail!].\r\n";
 
                 foreach (DataServerInfo server in dataServers) {
-                    text += server.remoteServer.Status() + "\n";
+                    text += server.remoteServer.Status() + "\r\n";
                 }
                 return text;
             }

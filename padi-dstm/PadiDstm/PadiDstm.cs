@@ -10,6 +10,10 @@ using System.Runtime.Remoting.Channels;
 using System.Transactions;
 
 namespace PADI_DSTM {
+    
+    // Delegates for Form's TextBox manipulation
+    delegate void ClearTextDel();
+    delegate void UpdateTextDel(String msg);
 
     public class PadInt {
 
@@ -139,6 +143,18 @@ namespace PADI_DSTM {
         public static bool Status() {
             try {
                 masterServer.Status();
+                return true;
+            } catch (TxException e) {
+                Console.WriteLine("Status error: " + e);
+                return false;
+            }
+        }
+
+        public static bool Status(TextBox textBox) {
+            try {
+                String text = masterServer.Status();
+                textBox.Invoke(new ClearTextDel(textBox.Clear));
+                textBox.Invoke(new UpdateTextDel(textBox.AppendText), new object[] { text });
                 return true;
             } catch (TxException e) {
                 Console.WriteLine("Status error: " + e);
