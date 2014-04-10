@@ -73,7 +73,7 @@ namespace PADI_DSTM {
 
             private void statusButton_Click(object sender, EventArgs e) {
                 // sabemos que não faz nada
-                PadiDstm.Status();
+                PadiDstm.Status(statusTextBox);
             }
 
             private void readButton_Click(object sender, EventArgs e) {
