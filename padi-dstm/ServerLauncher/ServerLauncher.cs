@@ -10,43 +10,37 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace WindowsFormsApplication1 {
+    
     public partial class ServerLauncher : Form {
+        
         public ServerLauncher() {
             InitializeComponent();
         }
 
-        private void label1_Click(object sender, EventArgs e) {
-
-        }
-
-        private void label2_Click(object sender, EventArgs e) {
-
-        }
-
-        private void textBox1_TextChanged(object sender, EventArgs e) {
-            
-        }
-
-        private void PortTextBox_TextChanged(object sender, EventArgs e) {
-           
-        }
-
         private void LaunchButton_Click(object sender, EventArgs e) {
-         
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = @"C:\Users\fernando\PADI\padi-dstm\padi-dstm\DataServer\bin\Debug\DataServer.exe";
-	startInfo.Arguments =  PortTextBox.Text ;
-	Process.Start(startInfo);
-            
 
-            
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
+            startInfo.Arguments = PortTextBox.Text;
+            Process.Start(startInfo);
         }
 
-        private void button1_Click(object sender, EventArgs e) {
+        private void LaunchMaster_Click(object sender, EventArgs e) {
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.FileName = @"..\..\..\MasterServer\bin\Debug\MasterServer.exe";
             Process.Start(startInfo);
+        }
 
+        private void SampleAppButton_Click(object sender, EventArgs e) {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = @"..\..\..\SampleApp\bin\Debug\SampleApp.exe";
+            Process.Start(startInfo);
+        }
+
+        private void ClientGUIbutton_Click(object sender, EventArgs e) {
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = @"..\..\..\Client\bin\Debug\Client.exe";
+            Process.Start(startInfo);
         }
     }
 }

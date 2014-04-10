@@ -72,8 +72,8 @@ namespace PADI_DSTM
         bool Freeze();
         bool Recover();
         String Status();
-        bool isFail { get; set; }
-        bool isFreeze { get; set; }
+        bool isFail { get; }
+        bool isFreeze { get; }
         
         bool canCommit(int txId);
         bool doCommit(int txId);
