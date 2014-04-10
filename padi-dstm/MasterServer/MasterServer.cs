@@ -321,6 +321,7 @@ namespace PADI_DSTM {
                 }
 
                 MyTransaction t = (MyTransaction)clientTransactions[txId];
+                _myCommitDecision = true;
                 foreach (DataServerInfo p in t.Participants) {
                     _myCommitDecision = _myCommitDecision && 
                         p.remoteServer.canCommit(t.TxId);
@@ -344,7 +345,7 @@ namespace PADI_DSTM {
                     TxAbort(txId);
                 }
                 Console.WriteLine("---");
-                return false;
+                return true;
             }
 
 
@@ -354,12 +355,12 @@ namespace PADI_DSTM {
                     throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
                 }
                 MyTransaction t = (MyTransaction)clientTransactions[txId];
-                _myCommitDecision = false;
+                
                 foreach (DataServerInfo p in t.Participants) {
                     p.remoteServer.doAbort(t.TxId);
                 }
                 Console.WriteLine("---");
-                return false;
+                return true;
             }
 
             public bool getDecision(int txId) {
