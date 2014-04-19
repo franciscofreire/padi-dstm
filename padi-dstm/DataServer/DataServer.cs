@@ -92,22 +92,32 @@ namespace PADI_DSTM {
                 }
 
             }
+            public override object InitializeLifetimeService() {
+                return null;
+            }
         }
 
         class ServerTransaction {
 
             private Hashtable copies;
-
-            public Hashtable Copies {
-                get { return copies; }
-                set { copies = value; }
-            }
             private int txId;
+            private bool abort;
 
             public ServerTransaction(int txId, PadInt Obj) {
                 this.txId = txId;
                 copies = new Hashtable();
                 copies.Add(Obj, Obj.Value);
+                abort = false;
+            }
+
+            public Hashtable Copies {
+                get { return copies; }
+                set { copies = value; }
+            }
+
+            public bool Abort {
+                get { return abort; }
+                set { abort = value; }
             }
 
             public void Add(PadInt Obj) {
@@ -117,6 +127,7 @@ namespace PADI_DSTM {
             public void Set(PadInt Obj, int value) {
                 copies[Obj] = value;
             }
+
         }
 
 
@@ -427,6 +438,10 @@ namespace PADI_DSTM {
                 return true;
             }
 
+            public override object InitializeLifetimeService() {
+                return null;
+            }
+
         }
 
         class Program {
@@ -465,7 +480,7 @@ namespace PADI_DSTM {
                 }
 
 
-                ChannelServices.RegisterChannel(channel, true);
+                ChannelServices.RegisterChannel(channel, false);
                 String name = "Server";
                 String url = "tcp://localhost:" + port + "/" + name;
 

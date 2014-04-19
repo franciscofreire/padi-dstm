@@ -16,6 +16,8 @@ class SampleApp {
         res = PadiDstm.TxBegin();
         pi_a = PadiDstm.AccessPadInt(0);
         pi_b = PadiDstm.AccessPadInt(1);
+        PadInt pi_c = PadiDstm.AccessPadInt(0);
+        PadInt pi_d = PadiDstm.AccessPadInt(1);
         pi_a.Write(36);
         pi_b.Write(37);
         Console.WriteLine("a = " + pi_a.Read());

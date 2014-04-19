@@ -61,7 +61,7 @@ namespace PADI_DSTM {
                 txId = -1;
                 // Port 0 -> To request that an available port be dynamically assigned
                 channel = new TcpChannel(0);
-                ChannelServices.RegisterChannel(channel, true);
+                ChannelServices.RegisterChannel(channel, false);
                 masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
                 ChannelDataStore data = (ChannelDataStore)channel.ChannelData;
                 clientUrl = (String)data.ChannelUris[0];

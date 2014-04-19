@@ -129,6 +129,11 @@ namespace PADI_DSTM {
                     this.uid = uid;
                     this.padInt = obj;
                 }
+
+                public MyPadInt(int uid) {
+                    this.uid = uid;
+                    this.padInt = null;
+                }
             }
 
 
@@ -218,7 +223,7 @@ namespace PADI_DSTM {
                         indexLastServer = (indexLastServer + 1) % dataServers.Count; // salta um índice
                         dServer = (DataServerInfo)dataServers[indexLastServer];
                     }
-                    
+
                     IPadInt obj = dServer.remoteServer.store(uid);
                     // obj nao vem nunca a null porque controlámos isso nos ifs anteriores...
                     // Round Robin:
@@ -247,8 +252,10 @@ namespace PADI_DSTM {
             //  retornamos url
             public PadIntInfo AccessPadInt(int uid) {
                 Console.WriteLine("[ACCESS] Client requests PadInt with id " + uid);
-                if (padIntsCache.Contains(uid)) {
-                    IPadInt obj = (IPadInt)padIntsCache[uid];
+                if (padIntsCache.Contains(new MyPadInt(uid))) {
+                    int index = padIntsCache.IndexOf(new MyPadInt(uid));
+                    MyPadInt myObj = (MyPadInt)padIntsCache[index];
+                    IPadInt obj = myObj.PadInt;
                     PadIntInfo padIntInfo = new PadIntInfo(obj);
                     Console.WriteLine("[ACCESS] PadInt " + uid + " returned from the cache. ");
                     Console.WriteLine("---");
@@ -320,29 +327,31 @@ namespace PADI_DSTM {
                     throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
                 }
 
-                MyTransaction t = (MyTransaction)clientTransactions[txId];
-                _myCommitDecision = true;
-                foreach (DataServerInfo p in t.Participants) {
-                    _myCommitDecision = _myCommitDecision && 
-                        p.remoteServer.canCommit(t.TxId);
-                }
-                if (_myCommitDecision) {
-                    Console.WriteLine("[TxCommit] Every Server voted Yes");
+                lock (this) {
+                    MyTransaction t = (MyTransaction)clientTransactions[txId];
+                    _myCommitDecision = true;
                     foreach (DataServerInfo p in t.Participants) {
-                        p.remoteServer.doCommit(t.TxId);
+                        _myCommitDecision = _myCommitDecision &&
+                            p.remoteServer.canCommit(t.TxId);
                     }
-                    foreach (DataServerInfo p in t.Participants) {
-                        if (!p.remoteServer.haveCommited(t.TxId)) {
-                            Console.WriteLine("[TxCommit] Some server failed to commit! Need rollback and abort.");
-                            _myCommitDecision = false;
-                            // atencao: se algum ja fez commit mesmo, como é que agora aborta? rollback?
-                            p.remoteServer.doAbort(t.TxId);
+                    if (_myCommitDecision) {
+                        Console.WriteLine("[TxCommit] Every Server voted Yes");
+                        foreach (DataServerInfo p in t.Participants) {
+                            p.remoteServer.doCommit(t.TxId);
                         }
+                        foreach (DataServerInfo p in t.Participants) {
+                            if (!p.remoteServer.haveCommited(t.TxId)) {
+                                Console.WriteLine("[TxCommit] Some server failed to commit! Need rollback and abort.");
+                                _myCommitDecision = false;
+                                // atencao: se algum ja fez commit mesmo, como é que agora aborta? rollback?
+                                p.remoteServer.doAbort(t.TxId);
+                            }
+                        }
+                    } else {
+                        Console.WriteLine("[TxCommit] Some Server voted No.");
+                        _myCommitDecision = false;
+                        TxAbort(txId);
                     }
-                } else {
-                    Console.WriteLine("[TxCommit] Some Server voted No.");
-                    _myCommitDecision = false;
-                    TxAbort(txId);
                 }
                 Console.WriteLine("---");
                 return true;
@@ -354,10 +363,12 @@ namespace PADI_DSTM {
                 if (!clientTransactions.ContainsKey(txId)) {
                     throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
                 }
-                MyTransaction t = (MyTransaction)clientTransactions[txId];
-                
-                foreach (DataServerInfo p in t.Participants) {
-                    p.remoteServer.doAbort(t.TxId);
+                lock (this) {
+                    MyTransaction t = (MyTransaction)clientTransactions[txId];
+
+                    foreach (DataServerInfo p in t.Participants) {
+                        p.remoteServer.doAbort(t.TxId);
+                    }
                 }
                 Console.WriteLine("---");
                 return true;
@@ -368,12 +379,16 @@ namespace PADI_DSTM {
                 Console.WriteLine("---");
                 return _myCommitDecision;
             }
+
+            public override object InitializeLifetimeService() {
+                return null;
+            }
         }
 
         class Program {
             static void Main(string[] args) {
                 TcpChannel channel = new TcpChannel(9999);
-                ChannelServices.RegisterChannel(channel, true);
+                ChannelServices.RegisterChannel(channel, false);
 
                 Master master = new Master();
 
