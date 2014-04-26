@@ -130,6 +130,92 @@ namespace PADI_DSTM {
 
         }
 
+        enum LockType { WRITE, READ };
+
+        class Lock {
+            private LockType type;
+            private int padIntId;
+            private int transactionId;
+            private int id;
+
+            public int Id {
+                get { return id; }
+                set { id = value; }
+            }
+            
+            public int PadIntId {
+                get { return padIntId; }
+                set { padIntId = value; }
+            }
+
+            public LockType Type {
+                get { return type; }
+                set { type = value; }
+            }
+            
+            public int TransactionId {
+                get { return transactionId; }
+                set { transactionId = value; }
+            }
+
+            public Lock(int id, LockType type, int padIntId, int transactionId) {
+                this.id = id;
+                this.type = type;
+                this.padIntId = padIntId;
+                this.transactionId = transactionId;
+            }
+
+            public override bool Equals(Object obj) {
+                if (obj == null || GetType() != obj.GetType())
+                    return false;
+                Lock l = (Lock) obj;
+                return l.TransactionId == this.TransactionId;
+            }
+
+            public override int GetHashCode() {
+                return transactionId;
+            }
+        }
+
+        class LockManager {
+            private Hashtable locks;
+            private int id;
+
+            public LockManager() { 
+                locks = new Hashtable();
+                id = 0;
+            }
+
+            private void addLock(LockType type, int padIntId, int transactionId) {
+                if(!locks.ContainsKey(padIntId)) {
+                    locks[padIntId] = new ArrayList();
+                }
+                ArrayList padIntsLocks = (ArrayList)locks[padIntId];
+                padIntsLocks.Add(new Lock(id++,type,padIntId,transactionId));
+            }
+
+            public bool canHaveLock(LockType type, int padIntId, int transactionId) {
+                if (!locks.ContainsKey(padIntId)) {
+                    addLock(type, padIntId, transactionId);
+                    return true;
+                } else {
+                    ArrayList padIntsLocks = (ArrayList)locks[padIntId];
+                    foreach (Lock l in padIntsLocks) {
+                        if (l.Type == LockType.WRITE && l.TransactionId != transactionId) {
+                            return false;
+                        }
+                    }
+                    addLock(type, padIntId, transactionId);
+                    return true;
+                }
+            }
+
+            public void releaseLock(LockType type, int padIntId, int transactionId) {
+                //TODO 
+            }
+
+        }
+
 
         class SingletonCounter {
 
