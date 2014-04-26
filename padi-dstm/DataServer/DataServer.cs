@@ -167,6 +167,7 @@ namespace PADI_DSTM {
         public class Server : MarshalByRefObject, IDataServer {
 
             private State _state;
+            private Object _stateLockObj;
             private String _name;
             private String _url;
             IMasterServer _masterServer;
@@ -190,6 +191,7 @@ namespace PADI_DSTM {
                 _url = url;
                 _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
                 _state = State.Normal;
+                _stateLockObj = new Object();
             }
 
             public void register() {
@@ -211,85 +213,104 @@ namespace PADI_DSTM {
             }
 
             public bool isNormal {
-                get { return _state == State.Normal; }
+                get {
+                    return _state == State.Normal;
+                }
             }
 
             public bool isFreeze {
-                get { return _state == State.Freeze; }
+                get {
+                    return _state == State.Freeze;
+                }
             }
 
             public bool Freeze() {
-                if (isFail) {
-                    while (true) ;
-                    //throw new RemotingException("Server is in Fail Mode");
-                }
-                if (isNormal) {
-                    _state = State.Freeze;
-                    Console.WriteLine("[FREEZE] Dataserver " + _name + " changed to [Freeze].");
-                    Console.WriteLine("---");
-                    return true;
+                lock (_stateLockObj) {
+                    if (isFail) {
+                        while (true) ;
+                        //throw new RemotingException("Server is in Fail Mode");
+                    }
+                    if (isNormal) {
+                        lock (_stateLockObj) {
+                            _state = State.Freeze;
+                        }
+                        Console.WriteLine("[FREEZE] Dataserver " + _name + " changed to [Freeze].");
+                        Console.WriteLine("---");
+                        return true;
+                    }
                 }
                 return false;
             }
 
             public bool Fail() {
-                if (isFreeze) {
-                    lock (SingletonCounter.Instance) {
-                        SingletonCounter.Instance.incrementLockCounter();
-                        Monitor.Wait(SingletonCounter.Instance);
+                lock (_stateLockObj) {
+                    if (isFreeze) {
+                        lock (SingletonCounter.Instance) {
+                            SingletonCounter.Instance.incrementLockCounter();
+                            Monitor.Wait(SingletonCounter.Instance);
+                        }
                     }
-                }
-                if (isNormal) {
-                    _state = State.Fail;
-                    Console.WriteLine("[FAIL] Dataserver " + _name + " changed to [Fail].");
-                    Console.WriteLine("---");
-                    return true;
-                } else {
-                    return false;
+                    if (isNormal) {
+                        lock (_stateLockObj) {
+                            _state = State.Fail;
+                        }
+                        Console.WriteLine("[FAIL] Dataserver " + _name + " changed to [Fail].");
+                        Console.WriteLine("---");
+                        return true;
+                    } else {
+                        return false;
+                    }
                 }
             }
 
             public bool Recover() {
-                if (isNormal) {
-                    return false;
-                } else if (isFreeze) {
-                    lock (SingletonCounter.Instance) {
-                        while (SingletonCounter.Instance.Lockcounter > 0) {
-                            SingletonCounter.Instance.decrementLockCounter();
-                            Monitor.Pulse(SingletonCounter.Instance);
+                lock (_stateLockObj) {
+                    if (isNormal) {
+                        return false;
+                    } else if (isFreeze) {
+                        lock (SingletonCounter.Instance) {
+                            while (SingletonCounter.Instance.Lockcounter > 0) {
+                                SingletonCounter.Instance.decrementLockCounter();
+                                Monitor.Pulse(SingletonCounter.Instance);
+                            }
                         }
                     }
+
+                    _state = State.Normal;
                 }
-                _state = State.Normal;
                 Console.WriteLine("[RECOVER] Dataserver " + _name + " changed to [OK].");
                 Console.WriteLine("---");
                 return true;
             }
 
             public String Status() {
-                if (isFail) {
-                    Console.WriteLine(_name + " Status: [Fail].");
-                    return _name + " Status: [Fail].";
-                } else if (isFreeze) {
-                    Console.WriteLine(_name + " Status: [Freeze].");
-                    return _name + " Status: [Freeze].";
-                } else {
-                    Console.WriteLine(_name + " Status: [OK].");
-                    return _name + " Status: [OK].";
+                lock (_stateLockObj) {
+                    if (isFail) {
+                        Console.WriteLine(_name + " Status: [Fail].");
+                        return _name + " Status: [Fail].";
+                    } else if (isFreeze) {
+                        Console.WriteLine(_name + " Status: [Freeze].");
+                        return _name + " Status: [Freeze].";
+                    } else {
+                        Console.WriteLine(_name + " Status: [OK].");
+                        return _name + " Status: [OK].";
+                    }
                 }
             }
 
             public IPadInt store(int uid) {
-                if (isFail) {
-                    Console.WriteLine("[!STORE] Error: DataServer " + name + " is set to [Fail] mode!");
-                    Console.WriteLine("---");
-                    while (true) ;
-                    //throw new RemotingException("Server is in Fail Mode");
+                lock (_stateLockObj) {
+                    if (isFail) {
+                        Console.WriteLine("[!STORE] Error: DataServer " + name + " is set to [Fail] mode!");
+                        Console.WriteLine("---");
+                        while (true) ;
+                        //throw new RemotingException("Server is in Fail Mode");
 
-                } else if (isFreeze) {
-                    lock (SingletonCounter.Instance) {
-                        SingletonCounter.Instance.incrementLockCounter();
-                        Monitor.Wait(SingletonCounter.Instance);
+                    } else if (isFreeze) {
+                        lock (SingletonCounter.Instance) {
+                            SingletonCounter.Instance.incrementLockCounter();
+                            Monitor.Wait(SingletonCounter.Instance);
+                        }
                     }
                 }
                 if (!padInts.Contains(uid)) {
@@ -305,16 +326,18 @@ namespace PADI_DSTM {
 
 
             public IPadInt load(int uid) {
-                if (isFail) {
-                    Console.WriteLine("[!LOAD] Error: DataServer " + name + " is set to [Fail] mode!");
-                    Console.WriteLine("---");
-                    while (true) ;
-                    //throw new RemotingException("Server is in Fail Mode");
+                lock (_stateLockObj) {
+                    if (isFail) {
+                        Console.WriteLine("[!LOAD] Error: DataServer " + name + " is set to [Fail] mode!");
+                        Console.WriteLine("---");
+                        while (true) ;
+                        //throw new RemotingException("Server is in Fail Mode");
 
-                } else if (isFreeze) {
-                    lock (SingletonCounter.Instance) {
-                        SingletonCounter.Instance.incrementLockCounter();
-                        Monitor.Wait(SingletonCounter.Instance);
+                    } else if (isFreeze) {
+                        lock (SingletonCounter.Instance) {
+                            SingletonCounter.Instance.incrementLockCounter();
+                            Monitor.Wait(SingletonCounter.Instance);
+                        }
                     }
                 }
                 if (padInts.Contains(uid)) {
