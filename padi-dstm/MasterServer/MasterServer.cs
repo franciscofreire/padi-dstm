@@ -8,6 +8,7 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 using System.Threading;
 using System.Transactions;
+using System.Diagnostics;
 
 namespace PADI_DSTM {
 
@@ -282,6 +283,15 @@ namespace PADI_DSTM {
                         return;
                 }
                 // obter referencia remota e registar servidor
+                String[] aux = url.Split(':');
+                String[] aux2 = aux[2].Split('/');
+
+                int primary= Convert.ToInt32(aux2[0]);
+
+                ProcessStartInfo startInfo = new ProcessStartInfo();
+                startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
+                startInfo.Arguments = primary+1+" "+ primary;
+                Process p = Process.Start(startInfo);
                 IDataServer remoteServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
                 DataServerInfo serverInfo = new DataServerInfo(url, remoteServer);
                 dataServers.Add(serverInfo);

@@ -53,6 +53,7 @@ namespace PADI_DSTM
         IPadInt CreatePadInt(int uid);
         PadIntInfo AccessPadInt(int uid);
         void registerServer(String url);
+       // void changeServer(int oldPort, int newPort);
         void registerClient(String url);
         String Status();
         
@@ -74,7 +75,8 @@ namespace PADI_DSTM
         String Status();
         bool isFail { get; }
         bool isFreeze { get; }
-        
+        void connect(int port);
+        //void receiveAlive();
         bool canCommit(int txId);
         bool doCommit(int txId);
         bool doAbort(int txId);

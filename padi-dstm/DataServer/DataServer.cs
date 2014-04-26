@@ -256,7 +256,11 @@ namespace PADI_DSTM {
             private Object _stateLockObj;
             private String _name;
             private String _url;
+            private bool _isPrimary;
+            private int _primaryPort;
+            private int _slavePort;
             IMasterServer _masterServer;
+            IDataServer _primaryServer;
 
             private const String urlMaster = "tcp://localhost:9999/MasterServer";
 
@@ -272,12 +276,26 @@ namespace PADI_DSTM {
 
             }
 
-            public Server(String name, String url) {
+            public Server(String name, String url,int primaryPort) {
                 _name = name;
                 _url = url;
                 _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
                 _state = State.Normal;
                 _stateLockObj = new Object();
+                _isPrimary = true;
+                _slavePort = 0;
+            }
+
+            public Server(String name, String url, int primaryPort, int slavePort) {
+                
+                _name = name;
+                _url = url;
+                _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
+                _state = State.Normal;
+                _stateLockObj = new Object();
+                _primaryPort = primaryPort;
+                _slavePort = slavePort;
+                _isPrimary = false;
             }
 
             public void register() {
@@ -551,6 +569,22 @@ namespace PADI_DSTM {
                 return null;
             }
 
+
+             public void makeConnection(int primaryPort) {
+
+                 String url = "tcp://localhost:" + primaryPort + "/" + name;
+                 _primaryServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
+                 _primaryServer.connect(_slavePort);
+                 
+                
+            }
+
+             public void connect(int slavePort) {
+                 _slavePort = slavePort;
+
+
+             }
+
         }
 
         class Program {
@@ -558,6 +592,9 @@ namespace PADI_DSTM {
             static void Main(string[] args) {
                 int port = 0;
                 TcpChannel channel = null;
+                bool isPrimary = false;
+                int primaryPort = 0;
+                
 
                 if (args.Count() == 0) {
                     Console.WriteLine("Invoked with no argumments.");
@@ -573,7 +610,16 @@ namespace PADI_DSTM {
                 } else if (args.Count() == 1) {
                     try {
                         port = Convert.ToInt32(args[0]);
-                        channel = new TcpChannel(port);
+                        isPrimary = true;
+
+                        while (channel == null) {
+                            try {
+                                channel = new TcpChannel(port);
+                            } catch (SocketException) {
+                                port++;
+                            }
+                        }
+                        
                     } catch (FormatException fe) {
                         Console.WriteLine("Malformed Args: " + args[0]);
                         Console.WriteLine(fe);
@@ -581,11 +627,28 @@ namespace PADI_DSTM {
                         Console.ReadKey();
                         return;
                     }
-                } else {
-                    Console.WriteLine("usage: DataServer.exe " + "<port>");
-                    Console.WriteLine("Press any key to exit...");
-                    Console.ReadKey();
-                    return;
+                } else if (args.Count() == 2) {
+
+                    try {
+                        port = Convert.ToInt32(args[0]);
+                        isPrimary = false;
+                        primaryPort = Convert.ToInt32(args[1]);
+
+                        while (channel == null) {
+                            try {
+                                channel = new TcpChannel(port);
+                            } catch (SocketException) {
+                                port++;
+                            }
+                        }
+
+                    } catch (FormatException fe) {
+                        Console.WriteLine("Malformed Args: " + args[0]);
+                        Console.WriteLine(fe);
+                        Console.WriteLine("Press any key to exit...");
+                        Console.ReadKey();
+                        return;
+                    }
                 }
 
 
@@ -594,9 +657,17 @@ namespace PADI_DSTM {
                 String url = "tcp://localhost:" + port + "/" + name;
 
                 String ServerName = name + "At" + port;
-                Server server = new Server(ServerName, url);
+                Server server = null;
+                if (isPrimary) {
+                    server = new Server(ServerName, url, primaryPort);
+                } else {
+                    server = new Server(ServerName, url, primaryPort, port);
+                    server.makeConnection(primaryPort);
+                 }
+
                 RemotingServices.Marshal(server, name, typeof(IDataServer));
-                server.register();
+
+                if (isPrimary) { server.register(); }
                 Console.WriteLine("Started " + ServerName + "...");
                 Console.WriteLine("---");
                 Console.ReadKey();
