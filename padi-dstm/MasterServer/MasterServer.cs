@@ -286,11 +286,11 @@ namespace PADI_DSTM {
                 String[] aux = url.Split(':');
                 String[] aux2 = aux[2].Split('/');
 
-                int primary= Convert.ToInt32(aux2[0]);
+                int primary = Convert.ToInt32(aux2[0]);
 
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
-                startInfo.Arguments = primary+1+" "+ primary;
+                startInfo.Arguments = (primary+1) + " " + primary;
                 Process p = Process.Start(startInfo);
                 IDataServer remoteServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
                 DataServerInfo serverInfo = new DataServerInfo(url, remoteServer);

@@ -261,6 +261,7 @@ namespace PADI_DSTM {
             private int _slavePort;
             IMasterServer _masterServer;
             IDataServer _primaryServer;
+            public String _primaryName;
 
             private const String urlMaster = "tcp://localhost:9999/MasterServer";
 
@@ -287,7 +288,6 @@ namespace PADI_DSTM {
             }
 
             public Server(String name, String url, int primaryPort, int slavePort) {
-                
                 _name = name;
                 _url = url;
                 _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
@@ -296,6 +296,7 @@ namespace PADI_DSTM {
                 _primaryPort = primaryPort;
                 _slavePort = slavePort;
                 _isPrimary = false;
+                _primaryName = "ServerAt" + primaryPort;
             }
 
             public void register() {
@@ -569,20 +570,17 @@ namespace PADI_DSTM {
                 return null;
             }
 
-
-             public void makeConnection(int primaryPort) {
-
-                 String url = "tcp://localhost:" + primaryPort + "/" + name;
+            public void makeConnection(int primaryPort) {
+                 String url = "tcp://localhost:" + primaryPort + "/" + "Server";
                  _primaryServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
                  _primaryServer.connect(_slavePort);
-                 
-                
             }
 
              public void connect(int slavePort) {
+                 //TODO Create remote reference to slave
                  _slavePort = slavePort;
 
-
+                 Console.WriteLine("Backup ServerAt{0} registered", slavePort);
              }
 
         }
@@ -590,6 +588,9 @@ namespace PADI_DSTM {
         class Program {
 
             static void Main(string[] args) {
+
+                Console.SetWindowSize(49, 18);
+
                 int port = 0;
                 TcpChannel channel = null;
                 bool isPrimary = false;
@@ -600,6 +601,7 @@ namespace PADI_DSTM {
                     Console.WriteLine("Invoked with no argumments.");
                     Console.WriteLine("Trying to assign port in range 2001...65535");
                     port = 2001;
+                    isPrimary = true;
                     while (channel == null) {
                         try {
                             channel = new TcpChannel(port);
@@ -608,6 +610,8 @@ namespace PADI_DSTM {
                         }
                     }
                 } else if (args.Count() == 1) {
+                    Console.WriteLine("Invoked with one argument (port).");
+                    Console.WriteLine("Trying to assign received port to Primary Server.");
                     try {
                         port = Convert.ToInt32(args[0]);
                         isPrimary = true;
@@ -621,14 +625,14 @@ namespace PADI_DSTM {
                         }
                         
                     } catch (FormatException fe) {
-                        Console.WriteLine("Malformed Args: " + args[0]);
+                        Console.WriteLine("Malformed Args: {0}", args[0]);
                         Console.WriteLine(fe);
                         Console.WriteLine("Press any key to exit...");
                         Console.ReadKey();
                         return;
                     }
                 } else if (args.Count() == 2) {
-
+                    Console.WriteLine("Invoked with two arguments.");
                     try {
                         port = Convert.ToInt32(args[0]);
                         isPrimary = false;
@@ -643,7 +647,7 @@ namespace PADI_DSTM {
                         }
 
                     } catch (FormatException fe) {
-                        Console.WriteLine("Malformed Args: " + args[0]);
+                        Console.WriteLine("Malformed Args: {0} {1}",args[0],args[1]);
                         Console.WriteLine(fe);
                         Console.WriteLine("Press any key to exit...");
                         Console.ReadKey();
@@ -658,17 +662,20 @@ namespace PADI_DSTM {
 
                 String ServerName = name + "At" + port;
                 Server server = null;
+                
+                
                 if (isPrimary) {
                     server = new Server(ServerName, url, primaryPort);
+                    RemotingServices.Marshal(server, name, typeof(IDataServer));
+                    server.register();
+                    Console.WriteLine("Started " + ServerName + " (Primary)...");
                 } else {
                     server = new Server(ServerName, url, primaryPort, port);
+                    RemotingServices.Marshal(server, name, typeof(IDataServer));
                     server.makeConnection(primaryPort);
-                 }
+                    Console.WriteLine("Started " + ServerName + " (Backup of "+server._primaryName+")...");
+                }
 
-                RemotingServices.Marshal(server, name, typeof(IDataServer));
-
-                if (isPrimary) { server.register(); }
-                Console.WriteLine("Started " + ServerName + "...");
                 Console.WriteLine("---");
                 Console.ReadKey();
             }
