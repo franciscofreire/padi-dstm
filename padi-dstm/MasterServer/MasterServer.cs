@@ -167,6 +167,10 @@ namespace PADI_DSTM {
             // Voting decision for 2pc (maybe it should be an attribute of MyTransaction)
             private bool _myCommitDecision = true;
 
+            private void clearCache() {
+                padIntsCache.Clear();
+            }
+
 
             public String Status() {
                 String text = "MasterServer Status: [OK, I never fail!].\r\n";
@@ -275,6 +279,38 @@ namespace PADI_DSTM {
                     Console.WriteLine("---");
                     return null;
                 }
+            }
+
+            public void registerNewPrimaryServer(String oldServerUrl, String newServerUrl) {
+                DataServerInfo dsInfoFound = null;
+                DataServerInfo dsInfoOld = new DataServerInfo(oldServerUrl);
+
+                foreach (DataServerInfo ds in dataServers) {
+                    if (ds.Equals(dsInfoOld))
+                        dsInfoFound = ds;
+                }
+                if (dsInfoFound == null) {
+                    //nothing to do here, server does not exists
+                    return;
+                }
+                try {
+                    //Creating DataServer Reference
+                    IDataServer remoteServerRef = (IDataServer)Activator.GetObject(typeof(IDataServer), newServerUrl);
+                    dsInfoFound.remoteServer = remoteServerRef;
+                } catch (RemotingException re) {
+                    Console.WriteLine("[registerNewServer]:\n"+re);
+                    return;
+                }
+                Console.WriteLine("[registerNewServer]: Operation Succeed!\n");
+            }
+
+            private int UrlToPort(String url) {
+                String[] aux = url.Split(':');
+                String[] aux2 = aux[2].Split('/');
+                return Convert.ToInt32(aux2[0]);
+            }
+            private String PortToUrl(int port) {
+                return "tcp://localhost:" + port + "/Server";
             }
 
             public void registerServer(String url) {
