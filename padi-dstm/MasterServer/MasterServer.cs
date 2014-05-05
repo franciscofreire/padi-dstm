@@ -349,14 +349,14 @@ namespace PADI_DSTM {
                         foreach (DataServerInfo p in t.Participants) {
                             p.remoteServer.doCommit(t.TxId);
                         }
-                        foreach (DataServerInfo p in t.Participants) {
+                        /*foreach (DataServerInfo p in t.Participants) {
                             if (!p.remoteServer.haveCommited(t.TxId)) {
                                 Console.WriteLine("[TxCommit] Some server failed to commit! Need rollback and abort.");
                                 _myCommitDecision = false;
                                 // atencao: se algum ja fez commit mesmo, como é que agora aborta? rollback?
                                 p.remoteServer.doAbort(t.TxId);
                             }
-                        }
+                        }*/
                     } else {
                         Console.WriteLine("[TxCommit] Some Server voted No.");
                         _myCommitDecision = false;
