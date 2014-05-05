@@ -8,6 +8,8 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Channels;
 using System.Threading;
 using System.Net.Sockets;
+using System.Diagnostics;
+using System.Timers;
 
 namespace PADI_DSTM {
 
@@ -362,8 +364,13 @@ namespace PADI_DSTM {
             private int _slavePort;
             private IMasterServer _masterServer;
             private IDataServer _primaryServer;
+            private IDataServer _slaveServer;
             public String _primaryName;
             private LockManager _lockManager;
+            private int _pingCounter = 0;
+            private Ping pingService;
+
+            public Object CounterLock = new Object();
 
             private const String urlMaster = "tcp://localhost:9999/MasterServer";
 
@@ -387,6 +394,20 @@ namespace PADI_DSTM {
             public Dictionary<int, ServerTransaction> Transactions {
                 get { return transactions; }
 
+            }
+
+            public int PingCounter {
+                get {                  
+                        return _pingCounter;
+                    }
+                }
+            
+
+            public void incrementCounter() { 
+                lock(CounterLock) {
+                    _pingCounter++;
+                    Console.WriteLine("Ping counter incremented");
+                }
             }
 
             public Server(String name, String url, int primaryPort) {
@@ -543,6 +564,22 @@ namespace PADI_DSTM {
                 return null;
             }
 
+            private String PortToUrl(int port) {
+                return "tcp://localhost:" + port + "/Server";
+            }
+            public void reportFailure() {
+                ProcessStartInfo startInfo = new ProcessStartInfo();
+                startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
+                startInfo.Arguments = (UrlToPort(_url) + 1) + " " + UrlToPort(_url);
+                Process p = Process.Start(startInfo);
+
+                Thread.Sleep(TimeSpan.FromSeconds(2));
+
+                if (!_isPrimary) {
+                    _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
+                }
+            }
+
 
             public IPadInt load(int uid) {
                 lock (_stateLockObj) {
@@ -637,7 +674,19 @@ namespace PADI_DSTM {
                 }
                 return true;
             }
-
+            private int UrlToPort(String url) {
+                String[] aux = url.Split(':');
+                String[] aux2 = aux[2].Split('/');
+                return Convert.ToInt32(aux2[0]);
+            }
+            public void receiveHeartBeat(String type) {
+                 
+               //if (type.Equals("ping")) {
+                   incrementCounter();
+                    Console.WriteLine("Received Ping " + PingCounter + " " + type);
+                   
+                //}
+            }
             public bool doAbort(int TxId) {
                 lock (_stateLockObj) {
                     if (isFail) {
@@ -707,7 +756,79 @@ namespace PADI_DSTM {
                 //TODO Create remote reference to slave
                 _slavePort = slavePort;
 
+                _slaveServer = (IDataServer)Activator.GetObject(typeof(IDataServer), PortToUrl(_slavePort));
+
                 Console.WriteLine("Backup ServerAt{0} registered", slavePort);
+
+                if (_isPrimary) {
+                    Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));
+                    pingService = new Ping(_slaveServer, this);
+                    
+                } else {
+                    Console.WriteLine(" Connected with the Primary at : " + PortToUrl(_primaryPort));
+                    pingService = new Ping(_primaryServer, this);
+                }
+            }
+
+            public class Ping {
+
+               System.Timers.Timer aTimer = new System.Timers.Timer();
+   
+
+                private IDataServer _server2;
+                private Server _myServer;
+                //private Thread _tReceive;
+                private Thread _tSend;
+                private int lastCounterValue;
+
+                public Ping(IDataServer server2, Server myServer) {                  
+                    _server2 = server2;
+                    _myServer = myServer;
+                    //_tReceive = new Thread(Receive);
+                    _tSend = new Thread(Send);
+                    //_tReceive.Start();
+                    _tSend.Start();
+                    aTimer.Elapsed += new ElapsedEventHandler(Receive);
+                    aTimer.Interval = 5000;
+                    aTimer.Enabled = true;
+                    lastCounterValue = _myServer.PingCounter;
+                }
+
+                private void Receive(object source, ElapsedEventArgs e) {
+                    Console.WriteLine("[Receive]: Counter = "+ _myServer.PingCounter);
+                    if (lastCounterValue == _myServer.PingCounter) {
+                        Console.WriteLine("Failed Heartbeats not received the server is down!!!");
+                        //_myServer.reportFailure();
+                        //_tSend.Abort();
+                        //return;
+                    }
+                    lastCounterValue = _myServer.PingCounter;
+                    Console.WriteLine("Last counter value = " + lastCounterValue);
+                }
+
+                /*public void Receive() {
+
+                       int counterBefore = _myServer.PingCounter;
+                        Thread.Sleep(TimeSpan.FromSeconds(8));                      
+                        if (counterBefore == _myServer.PingCounter) {
+                            Console.WriteLine("Failed Heartbeats not received the server is down!!!");
+                            _myServer.reportFailure();
+                            _tSend.Abort();
+                            return;
+                        }
+                    }
+                    
+
+                }*/
+                public void Send() {
+                    int i = 0;
+                    while (true) {
+                        Thread.Sleep(TimeSpan.FromSeconds(1));
+                        Console.WriteLine("Sending Ping "+i++);
+                        _server2.receiveHeartBeat(_myServer.URL);
+                    }
+                }
+
             }
 
         }

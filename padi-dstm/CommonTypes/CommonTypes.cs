@@ -81,6 +81,7 @@ namespace PADI_DSTM
         bool doCommit(int txId);
         bool doAbort(int txId);
         bool haveCommited(int txId);
+        void receiveHeartBeat(String type);
     }
 
     public interface IClient {
