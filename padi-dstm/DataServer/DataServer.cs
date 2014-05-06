@@ -15,311 +15,6 @@ namespace PADI_DSTM {
 
     namespace DataServer {
 
-        public enum LockType { WRITE, READ };
-
-        public class PadInt : MarshalByRefObject, IPadInt {
-
-            private int id;
-            private int value;
-            private Server myServer;
-
-            public int Value {
-                get { return value; }
-                set { this.value = value; }
-            }
-
-            public int Id {
-                get { return id; }
-            }
-
-            public PadInt(int id, Server srv) {
-                this.myServer = srv;
-                this.id = id;
-                this.value = 0;
-            }
-
-            public void Write(int txId, int value) {
-                lock (myServer.StateLockObj) {
-                    if (myServer.isFail) {
-                        Console.WriteLine("[!WRITE] Error: DataServer " + myServer.name + " is set to [Fail] mode!");
-                        Console.WriteLine("---");
-                        while (true) ;
-                    } else if (myServer.isFreeze) {
-                        lock (SingletonCounter.Instance) {
-                            SingletonCounter.Instance.incrementLockCounter();
-                            Monitor.Wait(SingletonCounter.Instance);
-                        }
-                        Console.WriteLine("[!WRITE] Error: DataServer " + myServer.name + " is set to [Freeze] mode!");
-                        Console.WriteLine("---");
-                    }
-        
-                }
-                ServerTransaction transaction = null;
-                if (!myServer.Transactions.ContainsKey(txId)) {
-                    transaction = new ServerTransaction(txId, this);
-                    myServer.Transactions.Add(txId, transaction);
-                    myServer.MasterServer.join(txId, myServer.URL);
-                }
-                transaction = myServer.Transactions[txId];
-                Console.WriteLine("[Write] Tx{0} is Trying to acquire lock for PadInt {1}",
-                txId, id);
-
-                Lock myLock = myServer.lockManager.getLock(LockType.WRITE, this.id, txId);
-                if (myLock == null) {
-                    //abort distributed transaction
-                    throw new TxException(txId, "Transaction abort on write due to Deadlock");
-                }
-                Console.WriteLine("[Write] Tx{0} Acquired lock for PadInt {1}",
-                    txId, id);
-                            
-                transaction.pushLock(myLock);
-                // if not yet saved, save it for future rollback
-                if (!transaction.containsPadInt(this)) {
-                    transaction.Add(this);
-                }
-                this.Value = value;
-                Console.WriteLine("[Write] Transaction " + txId + " created in " + myServer.name);
-                
-            }
-
-            public int Read(int txId) {
-                lock (myServer.StateLockObj) {
-                    if (myServer.isFail) {
-                        Console.WriteLine("[!READ] Error: DataServer " + myServer.name + " is set to [Fail] mode!");
-                        Console.WriteLine("---");
-                        while (true) ;
-
-                    } else if (myServer.isFreeze) {
-                        lock (SingletonCounter.Instance) {
-                            SingletonCounter.Instance.incrementLockCounter();
-                            Monitor.Wait(SingletonCounter.Instance);
-                        }
-                        Console.WriteLine("[!READ] Error: DataServer " + myServer.name + " is set to [Freeze] mode!");
-                        Console.WriteLine("---");
-                    }
-                }
-
-                ServerTransaction transaction = null;
-
-                if (!myServer.Transactions.ContainsKey(txId)) {
-                    transaction = new ServerTransaction(txId, this);
-                    myServer.Transactions.Add(txId, transaction);
-                    myServer.MasterServer.join(txId, myServer.URL);
-                    Console.WriteLine("[Read] Transaction " + txId + " created in " + myServer.name);
-                } else {
-                    transaction = myServer.Transactions[txId];
-                }
-
-                Console.WriteLine("[Read] Tx{0} is Trying to acquire lock for PadInt {1}",
-                txId, id);
-                Lock myLock = myServer.lockManager.getLock(LockType.READ, id, txId);
-                if(myLock == null) {
-                    //abort distributed transaction
-                    throw new TxException(txId, "Transaction abort on read due to Deadlock");
-                }
-
-                Console.WriteLine("[Read] Tx{0} Acquired lock for PadInt {1}",
-                    txId, id);
-                transaction.pushLock(myLock);
-                return this.value;
-                
-            }
-                public override object InitializeLifetimeService() {
-                    return null;
-                }
-        }
-
-        public class ServerTransaction {
-
-            private Dictionary<PadInt, int> copies;
-            private int txId;
-            private bool abort;
-            private Stack<Lock> locksStack;
-
-            public ServerTransaction(int txId, PadInt Obj) {
-                this.txId = txId;
-                copies = new Dictionary<PadInt, int>();
-                copies.Add(Obj, Obj.Value);
-                abort = false;
-                locksStack = new Stack<Lock>();
-            }
-
-            public bool Abort {
-                get { return abort; }
-                set { abort = value; }
-            }
-
-            public void Add(PadInt Obj) {
-                copies.Add(Obj, Obj.Value);
-            }
-
-            public void Set(PadInt Obj, int value) {
-                copies[Obj] = value;
-            }
-
-            public int getCopiesSize() {
-                return copies.Count;
-            }
-
-            public int getValue(PadInt padInt) {
-                return copies[padInt];
-            }
-
-            public Dictionary<PadInt, int>.KeyCollection getCopiesKeys() {
-                return copies.Keys;
-            }
-
-            public bool containsPadInt(PadInt padInt) {
-                return copies.ContainsKey(padInt);
-            }
-
-            public void doChanges() {
-                /*foreach (KeyValuePair<PadInt, int> entry in copies) {
-                    entry.Key.Value = entry.Value;
-                }*/
-            }
-            public void rollback() {
-                foreach (KeyValuePair<PadInt, int> entry in copies) {
-                    entry.Key.Value = entry.Value;
-                }
-            }
-            public void pushLock(Lock l) {
-                locksStack.Push(l);
-            }
-            // Note: returns null when the stack is empty
-            public Lock popLock() {
-                try {
-                    return locksStack.Pop();
-                } catch (InvalidOperationException ioe) {
-                    Console.WriteLine("Stack of Tx{0} is empty! {1}", txId, ioe);
-                    return null;
-                }
-            }
-        }
-
-        public class Lock {
-            private LockType type;
-            private int padIntId;
-            private int transactionId;
-            private int id;
-
-            public int Id {
-                get { return id; }
-                set { id = value; }
-            }
-
-            public int PadIntId {
-                get { return padIntId; }
-                set { padIntId = value; }
-            }
-
-            public LockType Type {
-                get { return type; }
-                set { type = value; }
-            }
-
-            public int TransactionId {
-                get { return transactionId; }
-                set { transactionId = value; }
-            }
-
-            public Lock(int id, LockType type, int padIntId, int transactionId) {
-                this.id = id;
-                this.type = type;
-                this.padIntId = padIntId;
-                this.transactionId = transactionId;
-            }
-
-            public Lock(int transactionId) {
-                this.transactionId = transactionId;
-            }
-
-            public override bool Equals(Object obj) {
-                if (obj == null || GetType() != obj.GetType())
-                    return false;
-                Lock l = (Lock)obj;
-                return l.TransactionId == this.TransactionId;
-            }
-
-            public override int GetHashCode() {
-                return transactionId;
-            }
-        }
-
-        public class LockManager {
-            private Dictionary<int, List<Lock>> locksGranted;
-            private int idGenerator;
-
-            public LockManager() {
-                locksGranted = new Dictionary<int, List<Lock>>();
-                idGenerator = 0;
-            }
-
-            // Possible Approachs (timeout): throw an exception
-            public Lock getLock(LockType type, int padIntId, int transactionId) {
-                lock (this) {
-                    if (!locksGranted.ContainsKey(padIntId)) {
-                        locksGranted[padIntId] = new List<Lock>();
-                    }
-                    List<Lock> padIntLocks = locksGranted[padIntId];
-                    Lock l = new Lock(idGenerator++, type, padIntId, transactionId);
-
-                    while (!canHaveLock(l, padIntLocks)) {
-                        Monitor.Wait(this);
-                    }
-                    // Nice! Now we have the lock
-                    padIntLocks.Add(l);
-                    return l;
-                }
-            }
-
-            private bool canHaveLock(Lock l, List<Lock> grantedList) {
-                foreach (Lock el in grantedList) {
-                    if (el.Type == LockType.WRITE) {
-                        if (l.Equals(el)) {
-                            return true;
-                        } else
-                            return false;
-                    }
-                }
-                // we only have read locks, it's ok
-                return true;
-            }
-
-            public void releaseLock(Lock l) {
-                lock (this) {
-                    List<Lock> padIntLocks = locksGranted[l.PadIntId];
-                    padIntLocks.Remove(l);
-                    if (l.Type == LockType.WRITE) {
-                        //let's release the next thread
-                        Monitor.Pulse(this);
-                    }
-                }
-            }
-            
-            public void releaseLock(int txId, Server s) {
-                lock (this) {
-                    ServerTransaction tr = s.Transactions[txId];
-                    foreach (PadInt p in tr.getCopiesKeys()) {
-                        List<Lock> padIntLocks = locksGranted[p.Id];
-                        if (padIntLocks != null) {
-                            int index = padIntLocks.IndexOf(new Lock(txId));
-                            if (index != -1) {
-                                Lock l = padIntLocks[index];
-                                Console.WriteLine("lock in " + l.PadIntId + "by " + l.TransactionId + " is being removed");
-                                padIntLocks.Remove(new Lock(txId));
-                                if (l.Type == LockType.WRITE) {
-                                    //let's release next thread
-                                    Monitor.Pulse(this);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-
         class SingletonCounter {
 
             private int lockcounter;
@@ -681,11 +376,10 @@ namespace PADI_DSTM {
             }
             public void receiveHeartBeat(String type) {
                  
-               //if (type.Equals("ping")) {
+               if (type.Equals("ping")) {
                    incrementCounter();
-                    Console.WriteLine("Received Ping " + PingCounter + " " + type);
-                   
-                //}
+                   Console.WriteLine("Received Ping " + PingCounter + " " + type);    
+               }
             }
             public bool doAbort(int TxId) {
                 lock (_stateLockObj) {
@@ -750,10 +444,13 @@ namespace PADI_DSTM {
                 String url = "tcp://localhost:" + primaryPort + "/" + "Server";
                 _primaryServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
                 _primaryServer.connect(_slavePort);
+                if (pingService == null)
+                    pingService = new Ping(_primaryServer, this);
+                pingService.StartSend();
             }
 
             public void connect(int slavePort) {
-                //TODO Create remote reference to slave
+
                 _slavePort = slavePort;
 
                 _slaveServer = (IDataServer)Activator.GetObject(typeof(IDataServer), PortToUrl(_slavePort));
@@ -762,75 +459,72 @@ namespace PADI_DSTM {
 
                 if (_isPrimary) {
                     Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));
-                    pingService = new Ping(_slaveServer, this);
-                    
-                } else {
-                    Console.WriteLine(" Connected with the Primary at : " + PortToUrl(_primaryPort));
-                    pingService = new Ping(_primaryServer, this);
+                    if (pingService == null) {
+                        pingService = new Ping(_slaveServer, this);
+                    }
+                    pingService.StartReceive();
                 }
             }
 
             public class Ping {
 
-               System.Timers.Timer aTimer = new System.Timers.Timer();
-   
-
-                private IDataServer _server2;
+                private IDataServer _otherServer;
                 private Server _myServer;
-                //private Thread _tReceive;
-                private Thread _tSend;
-                private int lastCounterValue;
+                private System.Timers.Timer _tSend;
+                private System.Timers.Timer _tReceive;
+                private static int lastCounterValue;
 
-                public Ping(IDataServer server2, Server myServer) {                  
-                    _server2 = server2;
+                public Ping(IDataServer otherServer, Server myServer) {
+                    _otherServer = otherServer;
                     _myServer = myServer;
-                    //_tReceive = new Thread(Receive);
-                    _tSend = new Thread(Send);
-                    //_tReceive.Start();
-                    _tSend.Start();
-                    aTimer.Elapsed += new ElapsedEventHandler(Receive);
-                    aTimer.Interval = 5000;
-                    aTimer.Enabled = true;
+
+                    _tSend = new System.Timers.Timer();
+                    _tSend.Elapsed += new ElapsedEventHandler(SendPing);
+                    _tSend.Interval = 1000;
+
+                    _tReceive = new System.Timers.Timer();
+                    _tReceive.Elapsed += new ElapsedEventHandler(Receive);
+                    _tReceive.Interval = 5000;
+
                     lastCounterValue = _myServer.PingCounter;
                 }
 
+                public void changeDataServer(IDataServer server) {
+                    _otherServer = server;
+                }
                 private void Receive(object source, ElapsedEventArgs e) {
                     Console.WriteLine("[Receive]: Counter = "+ _myServer.PingCounter);
                     if (lastCounterValue == _myServer.PingCounter) {
+                        _tSend.Stop();
                         Console.WriteLine("Failed Heartbeats not received the server is down!!!");
-                        //_myServer.reportFailure();
-                        //_tSend.Abort();
-                        //return;
+                        _myServer.reportFailure();
                     }
                     lastCounterValue = _myServer.PingCounter;
-                    Console.WriteLine("Last counter value = " + lastCounterValue);
+                    //Console.WriteLine("Last counter value = " + lastCounterValue);
                 }
 
-                /*public void Receive() {
-
-                       int counterBefore = _myServer.PingCounter;
-                        Thread.Sleep(TimeSpan.FromSeconds(8));                      
-                        if (counterBefore == _myServer.PingCounter) {
-                            Console.WriteLine("Failed Heartbeats not received the server is down!!!");
-                            _myServer.reportFailure();
-                            _tSend.Abort();
-                            return;
-                        }
-                    }
-                    
-
-                }*/
-                public void Send() {
-                    int i = 0;
-                    while (true) {
-                        Thread.Sleep(TimeSpan.FromSeconds(1));
-                        Console.WriteLine("Sending Ping "+i++);
-                        _server2.receiveHeartBeat(_myServer.URL);
-                    }
+                private void SendPing(object source, ElapsedEventArgs e) {
+                    Console.WriteLine("Sending Ping");
+                    _otherServer.receiveHeartBeat(_myServer.URL);
                 }
 
+                public void StartSend() {
+                    _tSend.Start();
+                }
+
+                public void StartReceive() {
+                    _tReceive.Start();
+                }
             }
 
+
+            public void startPing() {
+                if (_isPrimary) {
+                    pingService = new Ping(_slaveServer, this);
+                } else {
+                    pingService = new Ping(_primaryServer, this);
+                }
+            }
         }
 
         class Program {
