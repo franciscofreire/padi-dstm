@@ -15,6 +15,8 @@ namespace PADI_DSTM {
 
     namespace DataServer {
 
+        public delegate Lock AsyncGetLockCaller(LockType type, int padIntId, int transactionId);
+
         class SingletonCounter {
 
             private int lockcounter;
@@ -376,10 +378,10 @@ namespace PADI_DSTM {
             }
             public void receiveHeartBeat(String type) {
                  
-               if (type.Equals("ping")) {
+               //if (type.Equals("ping")) {
                    incrementCounter();
                    Console.WriteLine("Received Ping " + PingCounter + " " + type);    
-               }
+               //}
             }
             public bool doAbort(int TxId) {
                 lock (_stateLockObj) {
@@ -444,8 +446,8 @@ namespace PADI_DSTM {
                 String url = "tcp://localhost:" + primaryPort + "/" + "Server";
                 _primaryServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
                 _primaryServer.connect(_slavePort);
-                if (pingService == null)
-                    pingService = new Ping(_primaryServer, this);
+                
+                pingService = new Ping(_primaryServer, this);
                 pingService.StartSend();
             }
 
@@ -480,11 +482,11 @@ namespace PADI_DSTM {
 
                     _tSend = new System.Timers.Timer();
                     _tSend.Elapsed += new ElapsedEventHandler(SendPing);
-                    _tSend.Interval = 1000;
+                    _tSend.Interval = 3000;
 
                     _tReceive = new System.Timers.Timer();
                     _tReceive.Elapsed += new ElapsedEventHandler(Receive);
-                    _tReceive.Interval = 5000;
+                    _tReceive.Interval = 10000;
 
                     lastCounterValue = _myServer.PingCounter;
                 }
