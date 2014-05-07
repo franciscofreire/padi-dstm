@@ -106,7 +106,8 @@ namespace PADI_DSTM {
             }
 
             public Server(String name, String url, int primaryPort) {
-                _name = name;
+                try {
+                    _name = name;
                 _url = url;
                 _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
                 _state = State.Normal;
@@ -114,23 +115,37 @@ namespace PADI_DSTM {
                 _isPrimary = true;
                 _slavePort = 0;
                 _lockManager = new LockManager();
+                }  catch (RemotingException re) {
+                     Console.WriteLine("[Server]:\n" + re);
+                     throw new OperationException("Server " + name + "cannot start: MasterServer is not avaiable.");
+                 }
             }
 
             public Server(String name, String url, int primaryPort, int slavePort) {
-                _name = name;
-                _url = url;
-                _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
-                _state = State.Normal;
-                _stateLockObj = new Object();
-                _primaryPort = primaryPort;
-                _slavePort = slavePort;
-                _isPrimary = false;
-                _primaryName = "ServerAt" + primaryPort;
-                _lockManager = new LockManager();
+                try {
+                    _name = name;
+                    _url = url;
+                    _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
+                    _state = State.Normal;
+                    _stateLockObj = new Object();
+                    _primaryPort = primaryPort;
+                    _slavePort = slavePort;
+                    _isPrimary = false;
+                    _primaryName = "ServerAt" + primaryPort;
+                    _lockManager = new LockManager();
+                }  catch (RemotingException re) {
+                     Console.WriteLine("[Server]:\n" + re);
+                     throw new OperationException("Server " + name + "cannot start: MasterServer is not avaiable.");
+                 }
             }
 
             public void register() {
-                _masterServer.registerServer(_url);
+                try {
+                    _masterServer.registerServer(_url);
+                } catch (RemotingException re) {
+                    Console.WriteLine("[register]:\n" + re);
+                    throw new OperationException("Server " + name + "cannot register: MasterServer is not avaiable to registerServer.");
+                }
             }
 
             public String name {
@@ -262,6 +277,7 @@ namespace PADI_DSTM {
             private String PortToUrl(int port) {
                 return "tcp://localhost:" + port + "/Server";
             }
+
             public void reportFailure() {
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
@@ -271,8 +287,14 @@ namespace PADI_DSTM {
                 Thread.Sleep(TimeSpan.FromSeconds(2));
 
                 if (!_isPrimary) {
-                    _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
-                }
+                    try {
+                        _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
+                    } catch (RemotingException re) {
+                        Console.WriteLine("[reportFailure]:\n" + re);
+                        throw new OperationException("Server " + _url + "cannot reportFailure: MasterServer is not avaiable to registerNewPrimaryServer.");
+
+                    }
+                    }
             }
 
 
@@ -369,18 +391,20 @@ namespace PADI_DSTM {
                 }
                 return true;
             }
+
             private int UrlToPort(String url) {
                 String[] aux = url.Split(':');
                 String[] aux2 = aux[2].Split('/');
                 return Convert.ToInt32(aux2[0]);
             }
-            public void receiveHeartBeat(String type) {
-                 
+
+            public void receiveHeartBeat(String type) {                
                if (type.Equals("ping")) {
                    incrementCounter();
                    Console.WriteLine("Received Ping " + PingCounter + " " + type);    
                }
             }
+
             public bool doAbort(int TxId) {
                 lock (_stateLockObj) {
                     if (isFail) {
@@ -441,28 +465,38 @@ namespace PADI_DSTM {
             }
 
             public void makeConnection(int primaryPort) {
-                String url = "tcp://localhost:" + primaryPort + "/" + "Server";
-                _primaryServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
-                _primaryServer.connect(_slavePort);
-                if (pingService == null)
-                    pingService = new Ping(_primaryServer, this);
-                pingService.StartSend();
+                try {
+                    String url = "tcp://localhost:" + primaryPort + "/" + "Server";
+                    _primaryServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
+                    _primaryServer.connect(_slavePort);
+                    if (pingService == null)
+                        pingService = new Ping(_primaryServer, this);
+                    pingService.StartSend();
+                } catch (RemotingException re) {
+                     Console.WriteLine("[makeConnection]:\n" + re);
+                     throw new OperationException("Server " + name + "cannot makeConnection: MasterServer is not avaiable to connect.");
+                 }
+
             }
 
             public void connect(int slavePort) {
+                try {
+                    _slavePort = slavePort;
 
-                _slavePort = slavePort;
+                    _slaveServer = (IDataServer)Activator.GetObject(typeof(IDataServer), PortToUrl(_slavePort));
 
-                _slaveServer = (IDataServer)Activator.GetObject(typeof(IDataServer), PortToUrl(_slavePort));
+                    Console.WriteLine("Backup ServerAt{0} registered", slavePort);
 
-                Console.WriteLine("Backup ServerAt{0} registered", slavePort);
-
-                if (_isPrimary) {
-                    Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));
-                    if (pingService == null) {
-                        pingService = new Ping(_slaveServer, this);
+                    if (_isPrimary) {
+                        Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));
+                        if (pingService == null) {
+                            pingService = new Ping(_slaveServer, this);
+                        }
+                        pingService.StartReceive();
                     }
-                    pingService.StartReceive();
+                } catch (RemotingException re) {
+                    Console.WriteLine("[connecti]:\n" + re);
+                    throw new OperationException("Server " + name + "cannot connect: SlaveServer is not avaiable.");
                 }
             }
 
@@ -607,14 +641,31 @@ namespace PADI_DSTM {
 
 
                 if (isPrimary) {
-                    server = new Server(ServerName, url, primaryPort);
+                    try {
+                        server = new Server(ServerName, url, primaryPort);
+                    } catch (OperationException) {
+                        return;
+                    }
                     RemotingServices.Marshal(server, name, typeof(IDataServer));
-                    server.register();
+                    try {
+                        server.register();
+                    } catch (RemotingException) {
+                        return;
+                    }
                     Console.WriteLine("Started " + ServerName + " (Primary)...");
                 } else {
-                    server = new Server(ServerName, url, primaryPort, port);
+                    try {
+                        server = new Server(ServerName, url, primaryPort, port);
+                    } catch (OperationException) {
+                        return;
+                    }
                     RemotingServices.Marshal(server, name, typeof(IDataServer));
-                    server.makeConnection(primaryPort);
+                    try {
+                        server.makeConnection(primaryPort);
+
+                    } catch (RemotingException) {
+                        return;
+                 }
                     Console.WriteLine("Started " + ServerName + " (Backup of " + server._primaryName + ")...");
                 }
 

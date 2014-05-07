@@ -62,10 +62,21 @@ namespace PADI_DSTM {
                 // Port 0 -> To request that an available port be dynamically assigned
                 channel = new TcpChannel(0);
                 ChannelServices.RegisterChannel(channel, false);
-                masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
+                try {
+                    masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
+                } catch (RemotingException re) {
+                    Console.WriteLine("[Init]:\n" + re);
+                    return false;
+                    //throw new TxException(txId, "TxCommit transaction with id " + txId + "failed. canCommit voting failed.");
+
+                }
                 ChannelDataStore data = (ChannelDataStore)channel.ChannelData;
                 clientUrl = (String)data.ChannelUris[0];
-                masterServer.registerClient(clientUrl);
+                //try {
+                    masterServer.registerClient(clientUrl);
+                //} catch (RemotingException re) {
+
+                //}
                 return true;
             } catch (Exception e) {
                 Console.WriteLine("Init Exception:" + e);
@@ -112,42 +123,66 @@ namespace PADI_DSTM {
             } catch (TxException e) {
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot be aborted.");
                 return false;
-            }
+            } 
         }
 
         public static PadInt CreatePadInt(int uid) {
-            IPadInt obj = masterServer.CreatePadInt(uid);
-            if (obj == null) {
+            try {
+                IPadInt obj = masterServer.CreatePadInt(uid);
+                if (obj == null) {
+                    return null;
+                } else {
+                    PadInt localPadInt = new PadInt(uid, obj);
+                    return localPadInt;
+                }
+            } catch (TxException re) {
+                //Console.WriteLine("[CreatePadInt]: Cannot createPadInt with uid " + uid + "\n" + re);
+                String text = "[CreatePadInt]: Cannot createPadInt with uid " + uid + "\n" + re;
+                Console.WriteLine(text);
+                //textBox.Invoke(new ClearTextDel(textBox.Clear));
+                //textBox.Invoke(new UpdateTextDel(textBox.AppendText), new object[] { text });
                 return null;
-            } else {
-                PadInt localPadInt = new PadInt(uid, obj);
-                return localPadInt;
             }
         }
 
-        public static PadInt AccessPadInt(int uid) {
-            IPadInt padIntObj;
-            PadIntInfo obj = masterServer.AccessPadInt(uid);
-            if (obj == null) {
+        public static PadInt AccessPadInt( int uid) {
+            try {
+                IPadInt padIntObj;
+                PadIntInfo obj = masterServer.AccessPadInt(uid);
+                if (obj == null) {
+                    return null;
+                }
+
+                if (!obj.hasPadInt()) { // Catch remoting exception
+                    IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
+                    padIntObj = dataServer.load(uid);
+                } else {
+                    padIntObj = obj.PadInt;
+                }
+                PadInt localPadInt = new PadInt(uid, padIntObj);
+                return localPadInt;
+            } catch (TxException re) {
+                //Console.WriteLine("[AccessPadInt]:  Cannot accessPadInt with uid " + uid + "\n" + re);
+                String text = "[AccessPadInt]:  Cannot accessPadInt with uid " + uid + "\n" + re;
+                Console.WriteLine(text);
+                //textBox.Invoke(new ClearTextDel(textBox.Clear));
+                //textBox.Invoke(new UpdateTextDel(textBox.AppendText), new object[] { text });
+                
                 return null;
             }
-
-            if (!obj.hasPadInt()) { // Catch remoting exception
-                IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), obj.ServerUrl);
-                padIntObj = dataServer.load(uid);
-            } else {
-                padIntObj = obj.PadInt;
-            }
-            PadInt localPadInt = new PadInt(uid, padIntObj);
-            return localPadInt;
         }
 
         public static bool Status() {
             try {
                 masterServer.Status();
                 return true;
-            } catch (TxException e) {
-                Console.WriteLine("Status error: " + e);
+            } catch (OperationException e) {
+                //Console.WriteLine("Status error: " + e);
+                String text = "[Status] " + e;
+                Console.WriteLine(text);
+                //textBox.Invoke(new ClearTextDel(textBox.Clear));
+                //textBox.Invoke(new UpdateTextDel(textBox.AppendText), new object[] { text });
+                
                 return false;
             }
         }
@@ -158,40 +193,54 @@ namespace PADI_DSTM {
                 textBox.Invoke(new ClearTextDel(textBox.Clear));
                 textBox.Invoke(new UpdateTextDel(textBox.AppendText), new object[] { text });
                 return true;
-            } catch (TxException e) {
-                Console.WriteLine("Status error: " + e);
+            } catch (OperationException e) {
+                //Console.WriteLine("Status error: " + e);
+                String text = "[Status] " + e;
+                Console.WriteLine(text);
+                //textBox.Invoke(new ClearTextDel(textBox.Clear));
+                //textBox.Invoke(new UpdateTextDel(textBox.AppendText), new object[] { text });
                 return false;
             }
         }
 
-        public static bool Fail(string URL) {
+        public static bool Fail( string URL) {
             try {
                 IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
                 dataServer.Fail();
                 return true;
-            } catch (Exception e) { //TODO: Improve the catch
-                Console.WriteLine("[Fail] " + e);
-                return false;
-            }
-        }
-        public static bool Freeze(string URL) {
-            try {
-                IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
-                dataServer.Freeze();
-                return true;
-            } catch (Exception e) { //TODO: Improve the catch
-                Console.WriteLine("[Freeze] " + e);
+            } catch (RemotingException e) { //TODO: Improve the catch
+                String text = "[Fail] " + e;
+                Console.WriteLine(text);
+                //textBox.Invoke(new ClearTextDel(textBox.Clear));
+                //textBox.Invoke(new UpdateTextDel(textBox.AppendText), new object[] { text });
                 return false;
             }
         }
 
-        public static bool Recover(string URL) {
+        public static bool Freeze( string URL) {
             try {
                 IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
                 dataServer.Freeze();
                 return true;
-            } catch (Exception e) { //TODO: Improve the catch
-                Console.WriteLine("[Freeze] " + e);
+            } catch (RemotingException e) { //TODO: Improve the catch
+                String text = "[Freeze] " + e;
+                Console.WriteLine(text);
+                //textBox.Invoke(new ClearTextDel(textBox.Clear));
+                //textBox.Invoke(new UpdateTextDel(textBox.AppendText), new object[] { text });
+                return false;
+            }
+        }
+
+        public static bool Recover( string URL) {
+            try {
+                IDataServer dataServer = (IDataServer)Activator.GetObject(typeof(IDataServer), URL);
+                dataServer.Freeze();
+                return true;
+            } catch (RemotingException e) { //TODO: Improve the catch
+                String text = "[Recover] " + e;
+                Console.WriteLine(text);
+                //textBox.Invoke(new ClearTextDel(textBox.Clear));
+                //textBox.Invoke(new UpdateTextDel(textBox.AppendText), new object[] { text });
                 return false;
             }
         }
