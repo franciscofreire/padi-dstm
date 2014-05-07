@@ -292,17 +292,14 @@ namespace PADI_DSTM {
 
                     try {
                         _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
+                        _isPrimary = true;
+                        _primaryPort = 0;
                     } catch (RemotingException re) {
                         Console.WriteLine("[reportFailure]:\n" + re);
                         throw new OperationException("Server " + _url + "cannot reportFailure: MasterServer is not avaiable to registerNewPrimaryServer.");
 
                     }
-                    }
-                    _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);//Im the new Primary (Master)
-                    _isPrimary = true;
-                    _primaryPort = 0;
-
-                }
+               }
             }
 
 
@@ -480,18 +477,12 @@ namespace PADI_DSTM {
                     _primaryServer.connect(_slavePort);
                     if (pingService == null)
                         pingService = new Ping(_primaryServer, this);
-                    pingService.StartSend();
+                    pingService = new Ping(_primaryServer, this);
                 } catch (RemotingException re) {
                      Console.WriteLine("[makeConnection]:\n" + re);
                      throw new OperationException("Server " + name + "cannot makeConnection: MasterServer is not avaiable to connect.");
                  }
 
-                String url = "tcp://localhost:" + primaryPort + "/" + "Server";
-                _primaryServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
-                _primaryServer.connect(_slavePort);
-                
-                pingService = new Ping(_primaryServer, this);
-                pingService.StartSend();
             }
 
             public void connect(int slavePort) {
@@ -501,17 +492,19 @@ namespace PADI_DSTM {
                     _slaveServer = (IDataServer)Activator.GetObject(typeof(IDataServer), PortToUrl(_slavePort));
 
                     Console.WriteLine("Backup ServerAt{0} registered", slavePort);
-              
-					if (_isPrimary) {
-						Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));
-						//if (pingService == null) {
+
+                    if (_isPrimary) {
+                        Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));
+                        //if (pingService == null) {
                         pingService = new Ping(_slaveServer, this);
-						// }
-                    pingService.StartReceive();
-					}
-				} catch (RemotingException re) {
+                        // }
+                        pingService.StartReceive();
+                    }
+                } catch (RemotingException re) {
                     Console.WriteLine("[connect]:\n" + re);
                     throw new OperationException("Server " + name + "cannot connect: SlaveServer is not avaiable.");
+
+                }
             }
 
             public class Ping {
