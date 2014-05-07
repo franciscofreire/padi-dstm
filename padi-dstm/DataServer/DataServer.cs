@@ -517,7 +517,10 @@ namespace PADI_DSTM {
                 private Server _myServer;
                 private System.Timers.Timer _tSend;
                 private System.Timers.Timer _tReceive;
+                private System.Timers.Timer _tfailSend;
                 private static int lastCounterValue;
+                //private static bool receivedHeartBeat;
+                //private static int heartfailurescounter;
 
                 public Ping(IDataServer otherServer, Server myServer) {
                     _otherServer = otherServer;
@@ -531,7 +534,19 @@ namespace PADI_DSTM {
                     _tReceive.Elapsed += new ElapsedEventHandler(Receive);
                     _tReceive.Interval = 10000;
 
+                    _tfailSend = new System.Timers.Timer();
+                    _tfailSend.Elapsed += new ElapsedEventHandler(FailSend);
+                    _tfailSend.Interval = 3000;
+
                     lastCounterValue = _myServer.PingCounter;
+                    //receivedHeartBeat=false;
+                }
+
+                private void FailSend(object sender, ElapsedEventArgs e) {
+                    StopSend();
+                    StopReceive();
+                    StopFailSend();
+                    _myServer.reportFailure();
                 }
 
                 public void changeDataServer(IDataServer server) {
@@ -540,7 +555,9 @@ namespace PADI_DSTM {
                 private void Receive(object source, ElapsedEventArgs e) {
                     Console.WriteLine("[Receive]: Counter = "+ _myServer.PingCounter);
                     if (lastCounterValue == _myServer.PingCounter) {
-                        _tSend.Stop();
+                        StopSend();
+                        StopReceive();
+                        StopFailSend();
                         Console.WriteLine("Failed Heartbeats not received the server is down!!!");
                         _myServer.reportFailure();
                     }
@@ -551,28 +568,46 @@ namespace PADI_DSTM {
                 private void SendPing(object source, ElapsedEventArgs e) {
                     Console.WriteLine("Sending Ping");
                     int i;
-                    //for (i = 0; i < 3; i++) {
-                      //  try {
-                    _otherServer.receiveHeartBeat("ping");
-                        //    break;
-                        //} catch (RemotingException) {
-                          //  ; // do nothing
-                        //}
-                    //}
-                    //if (i == 3) { 
-                    //Im the new Master
-
-
-                    //}
+                    StartFailSend();
+                    for (i = 0; i < 3; i++) {
+                        try {
+                            _otherServer.receiveHeartBeat("ping");
+                            break;
+                        } catch (RemotingException) {
+                            ; // do nothing
+                        }
+                    }
+                    StopFailSend();
+                    if (i == 3) {
+                        //Im the new Master
+                        StopSend();
+                        StopReceive();
+                        _myServer.reportFailure();
+                    }
                 }
 
                 public void StartSend() {
                     _tSend.Start();
                 }
 
+                public void StopSend() {
+                    _tSend.Stop();
+                }
                 public void StartReceive() {
                     _tReceive.Start();
                 }
+
+                public void StopReceive() {
+                    _tReceive.Stop();
+                }
+
+                public void StartFailSend() {
+                    _tfailSend.Start();
+                }
+                public void StopFailSend() {
+                    _tfailSend.Stop();
+                }
+
             }
 
 
@@ -693,8 +728,9 @@ namespace PADI_DSTM {
                     Console.WriteLine("Started " + ServerName + " (Backup of " + server._primaryName + ")...");
                 }
 
-                Console.WriteLine("---");
+                Console.WriteLine("---Press key Abort");
                 Console.ReadKey();
+                
             }
         }
     }
