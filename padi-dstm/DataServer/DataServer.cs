@@ -273,7 +273,10 @@ namespace PADI_DSTM {
                 Thread.Sleep(TimeSpan.FromSeconds(2));
 
                 if (!_isPrimary) {
-                    _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
+                    _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);//Im the new Primary (Master)
+                    _isPrimary = true;
+                    _primaryPort = 0;
+
                 }
             }
 
@@ -378,10 +381,10 @@ namespace PADI_DSTM {
             }
             public void receiveHeartBeat(String type) {
                  
-               //if (type.Equals("ping")) {
+               if (type.Equals("ping")) {
                    incrementCounter();
                    Console.WriteLine("Received Ping " + PingCounter + " " + type);    
-               //}
+               }
             }
             public bool doAbort(int TxId) {
                 lock (_stateLockObj) {
@@ -461,9 +464,9 @@ namespace PADI_DSTM {
 
                 if (_isPrimary) {
                     Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));
-                    if (pingService == null) {
+                    //if (pingService == null) {
                         pingService = new Ping(_slaveServer, this);
-                    }
+                   // }
                     pingService.StartReceive();
                 }
             }
@@ -482,11 +485,11 @@ namespace PADI_DSTM {
 
                     _tSend = new System.Timers.Timer();
                     _tSend.Elapsed += new ElapsedEventHandler(SendPing);
-                    _tSend.Interval = 3000;
+                    _tSend.Interval = 1500;
 
                     _tReceive = new System.Timers.Timer();
                     _tReceive.Elapsed += new ElapsedEventHandler(Receive);
-                    _tReceive.Interval = 10000;
+                    _tReceive.Interval = 5000;
 
                     lastCounterValue = _myServer.PingCounter;
                 }
@@ -507,7 +510,20 @@ namespace PADI_DSTM {
 
                 private void SendPing(object source, ElapsedEventArgs e) {
                     Console.WriteLine("Sending Ping");
-                    _otherServer.receiveHeartBeat(_myServer.URL);
+                    int i;
+                    for (i = 0; i < 3; i++) {
+                        try {
+                            _otherServer.receiveHeartBeat("ping");
+                            break;
+                        } catch (RemotingException) {
+                            ; // do nothing
+                        }
+                    }
+                    if (i == 3) { 
+                    //Im the new Master
+
+
+                    }
                 }
 
                 public void StartSend() {
