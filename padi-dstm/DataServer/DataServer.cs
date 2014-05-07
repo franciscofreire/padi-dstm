@@ -292,8 +292,12 @@ namespace PADI_DSTM {
 
                     try {
                         _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
+
+                        /*
+                        _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
                         _isPrimary = true;
                         _primaryPort = 0;
+                          */
                     } catch (RemotingException re) {
                         Console.WriteLine("[reportFailure]:\n" + re);
                         throw new OperationException("Server " + _url + "cannot reportFailure: MasterServer is not avaiable to registerNewPrimaryServer.");
@@ -475,9 +479,9 @@ namespace PADI_DSTM {
                     String url = "tcp://localhost:" + primaryPort + "/" + "Server";
                     _primaryServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
                     _primaryServer.connect(_slavePort);
-                    if (pingService == null)
-                        pingService = new Ping(_primaryServer, this);
                     pingService = new Ping(_primaryServer, this);
+
+                    pingService.StartSend();
                 } catch (RemotingException re) {
                      Console.WriteLine("[makeConnection]:\n" + re);
                      throw new OperationException("Server " + name + "cannot makeConnection: MasterServer is not avaiable to connect.");
@@ -495,9 +499,9 @@ namespace PADI_DSTM {
 
                     if (_isPrimary) {
                         Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));
-                        //if (pingService == null) {
+                        
                         pingService = new Ping(_slaveServer, this);
-                        // }
+                         
                         pingService.StartReceive();
                     }
                 } catch (RemotingException re) {
@@ -521,11 +525,11 @@ namespace PADI_DSTM {
 
                     _tSend = new System.Timers.Timer();
                     _tSend.Elapsed += new ElapsedEventHandler(SendPing);
-                    _tSend.Interval = 1500;
+                    _tSend.Interval = 3000;
 
                     _tReceive = new System.Timers.Timer();
                     _tReceive.Elapsed += new ElapsedEventHandler(Receive);
-                    _tReceive.Interval = 5000;
+                    _tReceive.Interval = 10000;
 
                     lastCounterValue = _myServer.PingCounter;
                 }
@@ -547,19 +551,19 @@ namespace PADI_DSTM {
                 private void SendPing(object source, ElapsedEventArgs e) {
                     Console.WriteLine("Sending Ping");
                     int i;
-                    for (i = 0; i < 3; i++) {
-                        try {
-                            _otherServer.receiveHeartBeat("ping");
-                            break;
-                        } catch (RemotingException) {
-                            ; // do nothing
-                        }
-                    }
-                    if (i == 3) { 
+                    //for (i = 0; i < 3; i++) {
+                      //  try {
+                    _otherServer.receiveHeartBeat("ping");
+                        //    break;
+                        //} catch (RemotingException) {
+                          //  ; // do nothing
+                        //}
+                    //}
+                    //if (i == 3) { 
                     //Im the new Master
 
 
-                    }
+                    //}
                 }
 
                 public void StartSend() {
