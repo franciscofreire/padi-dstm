@@ -45,15 +45,18 @@ namespace PADI_DSTM {
 
                 private IDataServer _myRemoteServer;
                 private String _myURL;
+                private String _myName;
 
-                public DataServerInfo(String url, IDataServer remoteServer) {
+                public DataServerInfo(String url, IDataServer remoteServer, String name) {
                     _myURL = url;
                     _myRemoteServer = remoteServer;
+                    _myName = name;
                 }
 
                 public DataServerInfo(String url) {
                     _myURL = url;
                     _myRemoteServer = null;
+                    _myName = null;
                 }
                 public IDataServer remoteServer {
                     get { return _myRemoteServer; }
@@ -63,6 +66,11 @@ namespace PADI_DSTM {
                 public String URL {
                     get { return _myURL; }
                     set { _myURL = value; }
+                }
+
+                public String Name {
+                    get { return _myName; }
+                    set { _myName = value; }
                 }
 
                 public override bool Equals(Object obj) {
@@ -230,7 +238,7 @@ namespace PADI_DSTM {
 
                         DataServerInfo dServer = (DataServerInfo)dataServers[indexLastServer];
                         while (dServer.remoteServer.isFail) {
-                            Console.WriteLine("[CREATE] DataServer " + dServer.remoteServer.name + " is set to [Fail]: Passing his turn on Round Robin");
+                            Console.WriteLine("[CREATE] DataServer " + dServer.Name /*dServer.remoteServer.name*/ + " is set to [Fail]: Passing his turn on Round Robin");
                             indexLastServer = (indexLastServer + 1) % dataServers.Count; // salta um índice
                             dServer = (DataServerInfo)dataServers[indexLastServer];
                         }
@@ -244,7 +252,7 @@ namespace PADI_DSTM {
                         padInts.Add(uid, dServer);
                         MyPadInt myPadInt = new MyPadInt(uid, obj);
                         addPadInt(myPadInt);
-                        Console.WriteLine("[CREATE] PadInt " + uid + " stored on " + dServer.remoteServer.name);
+                        Console.WriteLine("[CREATE] PadInt " + uid + " stored on " + dServer.Name /*dServer.remoteServer.name*/);
                         Console.WriteLine("---");
                         return obj;
                     } else {
@@ -281,7 +289,7 @@ namespace PADI_DSTM {
                     } else if (padInts.Contains(uid)) {
                         DataServerInfo dServer = (DataServerInfo)padInts[uid];
                         PadIntInfo padIntInfo = new PadIntInfo(dServer.URL);
-                        Console.WriteLine("[ACCESS] Returned " + dServer.remoteServer.name + "'s URL, to further access PadInt " + uid + ".");
+                        Console.WriteLine("[ACCESS] Returned " + dServer.Name /*dServer.remoteServer.name*/ + "'s URL, to further access PadInt " + uid + ".");
                         Console.WriteLine("---");
 
                         IPadInt padInt = dServer.remoteServer.load(uid);
@@ -317,6 +325,7 @@ namespace PADI_DSTM {
                     //Creating DataServer Reference
                     IDataServer remoteServerRef = (IDataServer)Activator.GetObject(typeof(IDataServer), newServerUrl);
                     dsInfoFound.remoteServer = remoteServerRef;
+                    dsInfoFound.Name = remoteServerRef.name;    // <----- Atenção aqui (RTT), ha alternativa?
                 } catch (RemotingException re) {
                     Console.WriteLine("[registerNewPrimaryServer]:\n"+re);
                     return;
@@ -352,9 +361,9 @@ namespace PADI_DSTM {
 
                 try {
                     IDataServer remoteServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
-                    DataServerInfo serverInfo = new DataServerInfo(url, remoteServer);
+                    DataServerInfo serverInfo = new DataServerInfo(url, remoteServer, remoteServer.name); // <----- Atenção aqui (RTT), ha alternativa? 
                     dataServers.Add(serverInfo);
-                    Console.WriteLine("Server " + remoteServer.name + " registered.");
+                    Console.WriteLine("Server " + serverInfo.Name /*remoteServer.name*/ + " registered.");
                     Console.WriteLine("---");
                 } catch (RemotingException re) {
                     Console.WriteLine("[registerNewServer]:\n" + re);
