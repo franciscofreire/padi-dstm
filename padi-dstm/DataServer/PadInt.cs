@@ -8,6 +8,8 @@ namespace PADI_DSTM {
     
     namespace DataServer {
 
+        public delegate Lock AsyncGetLockCaller(LockType type, int padIntId, int transactionId);
+
         public class PadInt : MarshalByRefObject, IPadInt {
 
             private int id;
@@ -55,15 +57,16 @@ namespace PADI_DSTM {
                 Console.WriteLine("[Write] Tx{0} is Trying to acquire lock for PadInt {1}",
                 txId, id);
 
-                Lock myLock = myServer.lockManager.getLock(LockType.WRITE, this.id, txId);
-                if (myLock == null) {
-                    //abort distributed transaction
-                    throw new TxException(txId, "Transaction abort on write due to Deadlock");
-                }
+                
+                myServer.lockManager.setLock(this.id, txId, LockType.EXCLUSIVE);
+                
+                // to do in abort case
+                //myServer.MasterServer.TxAbort(txId);
+                //throw new TxException(txId, "Transaction abort on write due to Deadlock");
+
                 Console.WriteLine("[Write] Tx{0} Acquired lock for PadInt {1}",
                     txId, id);
 
-                transaction.pushLock(myLock);
                 // if not yet saved, save it for future rollback
                 if (!transaction.containsPadInt(this)) {
                     transaction.Add(this);
@@ -103,15 +106,12 @@ namespace PADI_DSTM {
 
                 Console.WriteLine("[Read] Tx{0} is Trying to acquire lock for PadInt {1}",
                 txId, id);
-                Lock myLock = myServer.lockManager.getLock(LockType.READ, id, txId);
-                if (myLock == null) {
-                    //abort distributed transaction
-                    throw new TxException(txId, "Transaction abort on read due to Deadlock");
-                }
+                
+                myServer.lockManager.setLock(this.id, txId, LockType.SHARED);
 
                 Console.WriteLine("[Read] Tx{0} Acquired lock for PadInt {1}",
                     txId, id);
-                transaction.pushLock(myLock);
+
                 return this.value;
 
             }

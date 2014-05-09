@@ -68,8 +68,8 @@ namespace PADI_DSTM {
             public Lock popLock() {
                 try {
                     return locksStack.Pop();
-                } catch (InvalidOperationException ioe) {
-                    Console.WriteLine("Stack of Tx{0} is empty! {1}", txId, ioe);
+                } catch (InvalidOperationException) {
+                    Console.WriteLine("Stack of Tx{0} is empty! {1}", txId);
                     return null;
                 }
             }

@@ -15,8 +15,6 @@ namespace PADI_DSTM {
 
     namespace DataServer {
 
-        public delegate Lock AsyncGetLockCaller(LockType type, int padIntId, int transactionId);
-
         class SingletonCounter {
 
             private int lockcounter;
@@ -103,24 +101,24 @@ namespace PADI_DSTM {
             public void incrementCounter() { 
                 lock(CounterLock) {
                     _pingCounter++;
-                    Console.WriteLine("Ping counter incremented");
+                    //Console.WriteLine("Ping counter incremented");
                 }
             }
 
             public Server(String name, String url, int primaryPort) {
                 try {
                     _name = name;
-                _url = url;
-                _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
-                _state = State.Normal;
-                _stateLockObj = new Object();
-                _isPrimary = true;
-                _slavePort = 0;
-                _lockManager = new LockManager();
-                }  catch (RemotingException re) {
-                     Console.WriteLine("[Server]:\n" + re);
-                     throw new OperationException("Server " + name + "cannot start: MasterServer is not avaiable.");
-                 }
+                    _url = url;
+                    _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
+                    _state = State.Normal;
+                    _stateLockObj = new Object();
+                    _isPrimary = true;
+                    _slavePort = 0;
+                    _lockManager = new LockManager();
+                } catch (RemotingException re) {
+                    Console.WriteLine("[Server]:\n" + re);
+                    throw new OperationException("Server " + name + "cannot start: MasterServer is not avaiable.");
+                }
             }
 
             public Server(String name, String url, int primaryPort, int slavePort) {
@@ -292,16 +290,13 @@ namespace PADI_DSTM {
 
                     try {
                         _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
-
-                        /*
-                        _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
                         _isPrimary = true;
                         _primaryPort = 0;
-                          */
+                    
                     } catch (RemotingException re) {
                         Console.WriteLine("[reportFailure]:\n" + re);
-                        throw new OperationException("Server " + _url + "cannot reportFailure: MasterServer is not avaiable to registerNewPrimaryServer.");
-
+                        throw new OperationException("Server " + _url + "cannot reportFailure:" + 
+                            "MasterServer is not avaiable to registerNewPrimaryServer.");
                     }
                }
             }
@@ -392,12 +387,8 @@ namespace PADI_DSTM {
 
                 ServerTransaction transaction = transactions[TxId];
                 
-                //Let's release the locks (reverse order/LIFO)
-                Lock l = transaction.popLock();
-                while (l != null) {
-                    _lockManager.releaseLock(l);
-                    l = transaction.popLock();
-                }
+                //Let's release the locks (reverse order?)
+                _lockManager.unLock(TxId);
                 return true;
             }
 
@@ -410,7 +401,7 @@ namespace PADI_DSTM {
             public void receiveHeartBeat(String type) {                
                if (type.Equals("ping")) {
                    incrementCounter();
-                   Console.WriteLine("Received Ping " + PingCounter + " " + type);    
+                   //Console.WriteLine("Received Ping " + PingCounter + " " + type);    
                }
             }
 
@@ -439,12 +430,9 @@ namespace PADI_DSTM {
 
                 ServerTransaction transaction = Transactions[TxId];
                 transaction.rollback();
-                //Let's release the locks (reverse order/LIFO)
-                Lock l = transaction.popLock();
-                while (l != null) {
-                    _lockManager.releaseLock(l);
-                    l = transaction.popLock();
-                }
+                //Let's release the locks (reverse order?)
+                _lockManager.unLock(TxId);
+
                 transactions.Remove(TxId);
                 return true;
             }
@@ -502,7 +490,7 @@ namespace PADI_DSTM {
                         
                         pingService = new Ping(_slaveServer, this);
                          
-                        pingService.StartReceive();
+                        //pingiervice.StartReceive();
                     }
                 } catch (RemotingException re) {
                     Console.WriteLine("[connect]:\n" + re);
@@ -519,8 +507,6 @@ namespace PADI_DSTM {
                 private System.Timers.Timer _tReceive;
                 private System.Timers.Timer _tfailSend;
                 private static int lastCounterValue;
-                //private static bool receivedHeartBeat;
-                //private static int heartfailurescounter;
 
                 public Ping(IDataServer otherServer, Server myServer) {
                     _otherServer = otherServer;
@@ -553,7 +539,7 @@ namespace PADI_DSTM {
                     _otherServer = server;
                 }
                 private void Receive(object source, ElapsedEventArgs e) {
-                    Console.WriteLine("[Receive]: Counter = "+ _myServer.PingCounter);
+                    //Console.WriteLine("[Receive]: Counter = "+ _myServer.PingCounter);
                     if (lastCounterValue == _myServer.PingCounter) {
                         StopSend();
                         StopReceive();
@@ -566,7 +552,7 @@ namespace PADI_DSTM {
                 }
 
                 private void SendPing(object source, ElapsedEventArgs e) {
-                    Console.WriteLine("Sending Ping");
+                    //Console.WriteLine("Sending Ping");
                     int i;
                     StartFailSend();
                     for (i = 0; i < 3; i++) {
@@ -728,7 +714,7 @@ namespace PADI_DSTM {
                     Console.WriteLine("Started " + ServerName + " (Backup of " + server._primaryName + ")...");
                 }
 
-                Console.WriteLine("---Press key Abort");
+                Console.WriteLine("---");
                 Console.ReadKey();
                 
             }

@@ -6,12 +6,11 @@ using System.Text;
 namespace PADI_DSTM {
 
     [Serializable]
-    public class OperationException : ApplicationException {
+    public class TimeoutException : ApplicationException {
 
-       
         private String _msg;
 
-       
+
 
         public String Msg {
             get {
@@ -20,14 +19,14 @@ namespace PADI_DSTM {
         }
 
 
-        public OperationException(String msg) {
-            
+        public TimeoutException(String msg) {
+
             _msg = msg;
         }
 
         // A constructor is needed for serialization when an 
         // exception propagates from a remoting server to the client.  
-        protected OperationException(System.Runtime.Serialization.SerializationInfo info,
+        protected TimeoutException(System.Runtime.Serialization.SerializationInfo info,
             System.Runtime.Serialization.StreamingContext context)
             : base(info, context) {
 

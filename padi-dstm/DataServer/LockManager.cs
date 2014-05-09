@@ -8,128 +8,113 @@ namespace PADI_DSTM {
 
     namespace DataServer {
         
-        public enum LockType { WRITE, READ };
+        public enum LockType { SHARED, EXCLUSIVE };
 
         public class Lock {
-            private LockType type;
             private int padIntId;
-            private int transactionId;
-            private int id;
-
-            public int Id {
-                get { return id; }
-                set { id = value; }
-            }
-
+            private List<int> holdersTxIds;
+            private LockType lockType;
+            private Object lockObject;
+            public bool timeExpired;
+            
             public int PadIntId {
                 get { return padIntId; }
                 set { padIntId = value; }
             }
 
             public LockType Type {
-                get { return type; }
-                set { type = value; }
+                get { return lockType; }
+                set { lockType = value; }
             }
 
-            public int TransactionId {
-                get { return transactionId; }
-                set { transactionId = value; }
+            public List<int> HoldersTxIds {
+                get { return holdersTxIds; }
+                set { holdersTxIds = value; }
             }
 
-            public Lock(int id, LockType type, int padIntId, int transactionId) {
-                this.id = id;
-                this.type = type;
+            public Lock(int padIntId) {
                 this.padIntId = padIntId;
-                this.transactionId = transactionId;
+                this.lockType = LockType.SHARED;
+                holdersTxIds = new List<int>();
+                lockObject = new Object();
+                timeExpired = false;
             }
 
-            public Lock(int transactionId) {
-                this.transactionId = transactionId;
+            public void acquire(int txId, LockType alockType) {
+                lock (lockObject) {
+                    while (hasConflictLock(txId)) {
+                        Monitor.Wait(lockObject,TimeSpan.FromSeconds(1));
+                        if (timeExpired) {
+                            timeExpired = false;
+                            throw new TimeoutException("Timeout due to deadlock");
+                        }
+                    }
+                    if (holdersTxIds.Count == 0) {
+                        holdersTxIds.Add(txId);
+                        lockType = alockType;
+                    } else if(!holdersTxIds.Contains(txId)) {
+                        holdersTxIds.Add(txId);
+                    } else if (alockType == LockType.EXCLUSIVE && lockType == LockType.SHARED) {
+                        Console.WriteLine("Promoting Tx{0} lock on {1}", txId, padIntId);
+                        lockType = LockType.EXCLUSIVE;
+                    }
+                }
             }
 
-            public override bool Equals(Object obj) {
-                if (obj == null || GetType() != obj.GetType())
-                    return false;
-                Lock l = (Lock)obj;
-                return l.TransactionId == this.TransactionId;
+            public void release(int txId) {
+                lock(lockObject) {
+                    Console.WriteLine("Releasing Tx{0} lock on {1}", txId,padIntId);
+                    holdersTxIds.Remove(txId);
+                    lockType = LockType.SHARED;
+                    Monitor.PulseAll(lockObject);
+                }
             }
 
-            public override int GetHashCode() {
-                return transactionId;
+
+            private bool hasConflictLock(int txId) {
+                return lockType == LockType.EXCLUSIVE &&
+                    !holdersTxIds.Contains(txId);
             }
         }
 
         public class LockManager {
-            private Dictionary<int, List<Lock>> locksGranted;
-            private int idGenerator;
+            private Dictionary<int, Lock> locks;
 
             public LockManager() {
-                locksGranted = new Dictionary<int, List<Lock>>();
-                idGenerator = 0;
+                locks = new Dictionary<int, Lock>();
             }
 
-            // Possible Approachs (timeout): throw an exception
-            public Lock getLock(LockType type, int padIntId, int transactionId) {
-                lock (this) {
-                    if (!locksGranted.ContainsKey(padIntId)) {
-                        locksGranted[padIntId] = new List<Lock>();
+            public void setLock(int padIntId, int txId, LockType lockType) {
+                Lock foundLock;
+                lock(this) {
+                    if (!locks.ContainsKey(padIntId)) {
+                        locks.Add(padIntId, new Lock(padIntId));
                     }
-                    List<Lock> padIntLocks = locksGranted[padIntId];
-                    Lock l = new Lock(idGenerator++, type, padIntId, transactionId);
-
-                    while (!canHaveLock(l, padIntLocks)) {
-                        Monitor.Wait(this);
-                    }
-                    // Nice! Now we have the lock
-                    padIntLocks.Add(l);
-                    return l;
+                    foundLock = locks[padIntId];
                 }
+                
+
+                foundLock.acquire(txId, lockType);
+            }
+            public delegate void LockTimer(Lock l);
+
+            public void timeOut(Lock l) {
+                l.timeExpired = true;
             }
 
-            private bool canHaveLock(Lock l, List<Lock> grantedList) {
-                foreach (Lock el in grantedList) {
-                    if (el.Type == LockType.WRITE) {
-                        if (l.Equals(el)) {
-                            return true;
-                        } else
-                            return false;
-                    }
-                }
-                // we only have read locks, it's ok
-                return true;
-            }
-
-            public void releaseLock(Lock l) {
+            public void unLock(int txId) {
                 lock (this) {
-                    List<Lock> padIntLocks = locksGranted[l.PadIntId];
-                    padIntLocks.Remove(l);
-                    if (l.Type == LockType.WRITE) {
-                        //let's release the next thread
-                        Monitor.Pulse(this);
-                    }
-                }
-            }
+                    Dictionary<int, Lock>.ValueCollection theLocks =
+                        locks.Values;
 
-            public void releaseLock(int txId, Server s) {
-                lock (this) {
-                    ServerTransaction tr = s.Transactions[txId];
-                    foreach (PadInt p in tr.getCopiesKeys()) {
-                        List<Lock> padIntLocks = locksGranted[p.Id];
-                        if (padIntLocks != null) {
-                            int index = padIntLocks.IndexOf(new Lock(txId));
-                            if (index != -1) {
-                                Lock l = padIntLocks[index];
-                                Console.WriteLine("lock in " + l.PadIntId + "by " + l.TransactionId + " is being removed");
-                                padIntLocks.Remove(new Lock(txId));
-                                if (l.Type == LockType.WRITE) {
-                                    //let's release next thread
-                                    Monitor.Pulse(this);
-                                }
-                            }
+                    foreach (Lock l in theLocks) {
+                        if (l.HoldersTxIds.Contains(txId)) {
+                            l.release(txId);
                         }
                     }
                 }
             }
+
         }
     }
 }
