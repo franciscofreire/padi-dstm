@@ -46,17 +46,19 @@ namespace PADI_DSTM {
                 private IDataServer _myRemoteServer;
                 private String _myURL;
                 private String _myName;
+                private int _id;
 
-                public DataServerInfo(String url, IDataServer remoteServer, String name) {
+                public DataServerInfo(String url, IDataServer remoteServer, String name, int id) {
                     _myURL = url;
                     _myRemoteServer = remoteServer;
                     _myName = name;
                 }
 
-                public DataServerInfo(String url) {
-                    _myURL = url;
+                public DataServerInfo(int id) {
+                    _myURL = null;
                     _myRemoteServer = null;
                     _myName = null;
+                    _id = id;
                 }
                 public IDataServer remoteServer {
                     get { return _myRemoteServer; }
@@ -73,16 +75,21 @@ namespace PADI_DSTM {
                     set { _myName = value; }
                 }
 
+                public int Id {
+                    get { return _id; }
+                    set { _id = value; }
+                }
+
                 public override bool Equals(Object obj) {
                     if (obj == null || GetType() != obj.GetType())
                         return false;
 
                     DataServerInfo dsInfo = (DataServerInfo)obj;
-                    return _myURL.Equals(dsInfo.URL);
+                    return this.Id == dsInfo.Id;
                 }
 
                 public override int GetHashCode() {
-                    return _myURL.GetHashCode();
+                    return _id;
                 }
 
             }
@@ -174,6 +181,8 @@ namespace PADI_DSTM {
 
             // Voting decision for 2pc (maybe it should be an attribute of MyTransaction)
             private bool _myCommitDecision = true;
+
+            private int id; 
 
             private void clearCache() {
                 padIntsCache.Clear();
@@ -310,9 +319,19 @@ namespace PADI_DSTM {
                 }
             }
 
-            public void registerNewPrimaryServer(String oldServerUrl, String newServerUrl) {
+           
+
+            public void registerNewPrimaryServer(String newServerUrl, int Id) {
+
+                ProcessStartInfo startInfo = new ProcessStartInfo();
+                startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
+                startInfo.Arguments = (Id + " " + UrlToPort(newServerUrl));
+                Process p = Process.Start(startInfo);
+                
+                Thread.Sleep(TimeSpan.FromSeconds(2));
+
                 DataServerInfo dsInfoFound = null;
-                DataServerInfo dsInfoOld = new DataServerInfo(oldServerUrl);
+                DataServerInfo dsInfoOld = new DataServerInfo(Id);
 
                 foreach (DataServerInfo ds in dataServers) {
                     if (ds.Equals(dsInfoOld))
@@ -344,10 +363,10 @@ namespace PADI_DSTM {
                 return "tcp://localhost:" + port + "/Server";
             }
 
-            public void registerServer(String url) {
+            public int registerServer(String url) {
                 foreach (DataServerInfo server in dataServers) {
                     if (server.URL.Equals(url))
-                        return;
+                        return -1;
                 }
                 // obter referencia remota e registar servidor
                 String[] aux = url.Split(':');
@@ -358,17 +377,24 @@ namespace PADI_DSTM {
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
                 startInfo.Arguments = (primary + 1) + " " + primary;
-                //Process p = Process.Start(startInfo);
+                Process p = Process.Start(startInfo);
 
                 try {
+                    
                     IDataServer remoteServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
-                    DataServerInfo serverInfo = new DataServerInfo(url, remoteServer, remoteServer.name); // <----- Atenção aqui (RTT), ha alternativa? 
+                    DataServerInfo serverInfo = new DataServerInfo(url, remoteServer, remoteServer.name,id); // <----- Atenção aqui (RTT), ha alternativa? 
                     dataServers.Add(serverInfo);
                     Console.WriteLine("Server " + serverInfo.Name /*remoteServer.name*/ + " registered.");
                     Console.WriteLine("---");
+
+                    lock (this) {
+                        Interlocked.Increment(ref id);
+                    }
+                    return id;
+
                 } catch (RemotingException re) {
                     Console.WriteLine("[registerNewServer]:\n" + re);
-                    return;
+                    return -1;
                 }
             }
 

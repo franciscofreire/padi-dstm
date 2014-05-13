@@ -52,8 +52,8 @@ namespace PADI_DSTM
 
         IPadInt CreatePadInt(int uid);
         PadIntInfo AccessPadInt(int uid);
-        void registerServer(String url);
-        void registerNewPrimaryServer(String oldServerUrl, String newServerUrl);
+        int registerServer(String url);
+        void registerNewPrimaryServer( String newServerUrl, int id);
         void registerClient(String url);
         String Status();
         
@@ -65,7 +65,7 @@ namespace PADI_DSTM
     }
 
     public interface IDataServer {
-        
+        void receiveupdatefromprimary(Dictionary<int, int> updatetobackup, int Tid);
         IPadInt store(int uid);
         IPadInt load(int uid);
         String name{ get; set;}
@@ -76,6 +76,7 @@ namespace PADI_DSTM
         bool isFail { get; }
         bool isFreeze { get; }
         void connect(int port);
+        void receiveUpdateAll(Hashtable mypadInts);
         //void receiveAlive();
         bool canCommit(int txId);
         bool doCommit(int txId);
