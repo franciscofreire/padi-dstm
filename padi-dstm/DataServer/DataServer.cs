@@ -64,6 +64,13 @@ namespace PADI_DSTM {
             private LockManager _lockManager;
             private int _pingCounter = 0;
             private Ping pingService;
+            private int _Id = 0;
+            private int _lastTransactionId = 0;
+
+            public int Id {
+                get { return _Id; }
+                set { _Id = value; }
+            }
 
             public Object CounterLock = new Object();
 
@@ -73,6 +80,11 @@ namespace PADI_DSTM {
                 new Dictionary<int, ServerTransaction>();
 
             private Hashtable padInts = new Hashtable();
+
+            public Hashtable PadInts {
+                get { return padInts; }
+                set { padInts = value; }
+            }
 
             public IMasterServer MasterServer {
                 get { return _masterServer; }
@@ -121,7 +133,7 @@ namespace PADI_DSTM {
                 }
             }
 
-            public Server(String name, String url, int primaryPort, int slavePort) {
+            public Server(String name, String url, int primaryPort, int slavePort, int Id) {
                 try {
                     _name = name;
                     _url = url;
@@ -133,6 +145,7 @@ namespace PADI_DSTM {
                     _isPrimary = false;
                     _primaryName = "ServerAt" + primaryPort;
                     _lockManager = new LockManager();
+                    _Id = Id;
                 }  catch (RemotingException re) {
                      Console.WriteLine("[Server]:\n" + re);
                      throw new OperationException("Server " + name + "cannot start: MasterServer is not avaiable.");
@@ -141,7 +154,7 @@ namespace PADI_DSTM {
 
             public void register() {
                 try {
-                    _masterServer.registerServer(_url);
+                      _Id = _masterServer.registerServer(_url);
                 } catch (RemotingException re) {
                     Console.WriteLine("[register]:\n" + re);
                     throw new OperationException("Server " + name + "cannot register: MasterServer is not avaiable to registerServer.");
@@ -265,8 +278,15 @@ namespace PADI_DSTM {
                 }
                 if (!padInts.Contains(uid)) {
 
+                    
                     PadInt obj = new PadInt(uid, this);
                     padInts.Add(uid, obj);
+
+                    if (_isPrimary) {
+                        _slaveServer.store(uid);
+                    }
+                    
+
                     Console.WriteLine("[STORE] DataServer " + name + " stored PadInt " + uid);
                     Console.WriteLine("---");
                     return obj;
@@ -279,28 +299,25 @@ namespace PADI_DSTM {
             }
 
             public void reportFailure() {
+                /*
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
                 startInfo.Arguments = (UrlToPort(_url) + 1) + " " + UrlToPort(_url);
                 Process p = Process.Start(startInfo);
+                */
+                //Thread.Sleep(TimeSpan.FromSeconds(2));
 
-                Thread.Sleep(TimeSpan.FromSeconds(2));
-
-                if (!_isPrimary) {
-
-                    try {
-                        _masterServer.registerNewPrimaryServer(PortToUrl(_primaryPort), _url);
-                        _isPrimary = true;
-                        _primaryPort = 0;
-                    
-                    } catch (RemotingException re) {
-                        Console.WriteLine("[reportFailure]:\n" + re);
-                        throw new OperationException("Server " + _url + "cannot reportFailure:" + 
-                            "MasterServer is not avaiable to registerNewPrimaryServer.");
-                    }
-               }
+                _masterServer.registerNewPrimaryServer(_url, _Id);
+                // lança no master;
+                _isPrimary = true;
+                _primaryPort = 0;
             }
 
+            public void receiveUpdateAll(Hashtable mypadInts) {
+                padInts = mypadInts;
+                Console.WriteLine("I got your Padint !");
+                      
+            }
 
             public IPadInt load(int uid) {
                 lock (_stateLockObj) {
@@ -386,7 +403,16 @@ namespace PADI_DSTM {
                 }
 
                 ServerTransaction transaction = transactions[TxId];
-                
+
+                if (_isPrimary) {
+                    transaction.updatetobackup();
+                    Dictionary<int, int> updates= new Dictionary<int,int>();
+                    updates=transaction.Valuestobackup;
+                    _slaveServer.receiveupdatefromprimary(updates,TxId);
+
+                }
+
+                //transaction.
                 //Let's release the locks (reverse order?)
                 _lockManager.unLock(TxId);
                 return true;
@@ -401,7 +427,7 @@ namespace PADI_DSTM {
             public void receiveHeartBeat(String type) {                
                if (type.Equals("ping")) {
                    incrementCounter();
-                   //Console.WriteLine("Received Ping " + PingCounter + " " + type);    
+                   Console.WriteLine("Received Ping " + PingCounter + " " + type);    
                }
             }
 
@@ -457,6 +483,18 @@ namespace PADI_DSTM {
                 return true;
             }
 
+            public void receiveupdatefromprimary(Dictionary<int,int> updatetobackup, int Tid){
+                foreach (KeyValuePair<int, int> entry in updatetobackup) {
+                    if (padInts.Contains(entry.Key)) {
+                        PadInt p = (PadInt) padInts[entry.Key];
+                        p.Value = entry.Value;
+                        Console.WriteLine("<Debug Mode> Padint with id: " + p.Id + "has now the value: " + p.Value);
+                    }                     
+                }
+                _lastTransactionId = Tid;
+                Console.WriteLine("Received update from primary according to the transaction id: " + Tid);
+            }
+
             public override object InitializeLifetimeService() {
                 return null;
             }
@@ -468,7 +506,6 @@ namespace PADI_DSTM {
                     _primaryServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
                     _primaryServer.connect(_slavePort);
                     pingService = new Ping(_primaryServer, this);
-
                     pingService.StartSend();
                 } catch (RemotingException re) {
                      Console.WriteLine("[makeConnection]:\n" + re);
@@ -484,13 +521,14 @@ namespace PADI_DSTM {
                     _slaveServer = (IDataServer)Activator.GetObject(typeof(IDataServer), PortToUrl(_slavePort));
 
                     Console.WriteLine("Backup ServerAt{0} registered", slavePort);
+                    _slaveServer.receiveUpdateAll(PadInts);
 
                     if (_isPrimary) {
                         Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));
                         
                         pingService = new Ping(_slaveServer, this);
                          
-                        //pingiervice.StartReceive();
+                        pingService.StartReceive();
                     }
                 } catch (RemotingException re) {
                     Console.WriteLine("[connect]:\n" + re);
@@ -514,15 +552,16 @@ namespace PADI_DSTM {
 
                     _tSend = new System.Timers.Timer();
                     _tSend.Elapsed += new ElapsedEventHandler(SendPing);
-                    _tSend.Interval = 3000;
+                    _tSend.Interval = 5000;
+
 
                     _tReceive = new System.Timers.Timer();
                     _tReceive.Elapsed += new ElapsedEventHandler(Receive);
-                    _tReceive.Interval = 10000;
+                    _tReceive.Interval = 7500;
 
                     _tfailSend = new System.Timers.Timer();
                     _tfailSend.Elapsed += new ElapsedEventHandler(FailSend);
-                    _tfailSend.Interval = 3000;
+                    _tfailSend.Interval = 10000;
 
                     lastCounterValue = _myServer.PingCounter;
                     //receivedHeartBeat=false;
@@ -532,7 +571,12 @@ namespace PADI_DSTM {
                     StopSend();
                     StopReceive();
                     StopFailSend();
+
+
+                               
                     _myServer.reportFailure();
+              
+                    
                 }
 
                 public void changeDataServer(IDataServer server) {
@@ -552,24 +596,19 @@ namespace PADI_DSTM {
                 }
 
                 private void SendPing(object source, ElapsedEventArgs e) {
-                    //Console.WriteLine("Sending Ping");
-                    int i;
-                    StartFailSend();
-                    for (i = 0; i < 3; i++) {
-                        try {
-                            _otherServer.receiveHeartBeat("ping");
-                            break;
-                        } catch (RemotingException) {
-                            ; // do nothing
-                        }
-                    }
-                    StopFailSend();
-                    if (i == 3) {
-                        //Im the new Master
+                    Console.WriteLine("Sending Ping");
+                    try {
+                        _otherServer.receiveHeartBeat("ping");
+                    } catch (RemotingException) {
+
+                        Console.WriteLine("Remote Exception");
                         StopSend();
                         StopReceive();
                         _myServer.reportFailure();
                     }
+                        
+                    
+            
                 }
 
                 public void StartSend() {
@@ -577,10 +616,13 @@ namespace PADI_DSTM {
                 }
 
                 public void StopSend() {
+                
                     _tSend.Stop();
+                   
                 }
                 public void StartReceive() {
                     _tReceive.Start();
+                    
                 }
 
                 public void StopReceive() {
@@ -610,12 +652,13 @@ namespace PADI_DSTM {
 
             static void Main(string[] args) {
 
-                Console.SetWindowSize(49, 18);
+               // Console.SetWindowSize(49, 18);
 
                 int port = 0;
                 TcpChannel channel = null;
                 bool isPrimary = false;
                 int primaryPort = 0;
+                int Id = 0;
 
 
                 if (args.Count() == 0) {
@@ -655,9 +698,10 @@ namespace PADI_DSTM {
                 } else if (args.Count() == 2) {
                     Console.WriteLine("Invoked with two arguments.");
                     try {
-                        port = Convert.ToInt32(args[0]);
+                        Id = Convert.ToInt32(args[0]);
                         isPrimary = false;
                         primaryPort = Convert.ToInt32(args[1]);
+                        port = primaryPort + 1;
 
                         while (channel == null) {
                             try {
@@ -666,7 +710,7 @@ namespace PADI_DSTM {
                                 port++;
                             }
                         }
-
+                        
                     } catch (FormatException fe) {
                         Console.WriteLine("Malformed Args: {0} {1}", args[0], args[1]);
                         Console.WriteLine(fe);
@@ -683,7 +727,7 @@ namespace PADI_DSTM {
 
                 String ServerName = name + "At" + port;
                 Server server = null;
-
+                
 
                 if (isPrimary) {
                     try {
@@ -700,14 +744,14 @@ namespace PADI_DSTM {
                     Console.WriteLine("Started " + ServerName + " (Primary)...");
                 } else {
                     try {
-                        server = new Server(ServerName, url, primaryPort, port);
+                        server = new Server(ServerName, url, primaryPort, port, Id);
                     } catch (OperationException) {
                         return;
                     }
                     RemotingServices.Marshal(server, name, typeof(IDataServer));
                     try {
                         server.makeConnection(primaryPort);
-
+                        
                     } catch (RemotingException) {
                         return;
                  }
@@ -716,6 +760,8 @@ namespace PADI_DSTM {
 
                 Console.WriteLine("---");
                 Console.ReadKey();
+               
+                server = null;
                 
             }
         }

@@ -10,6 +10,12 @@ namespace PADI_DSTM {
         public class ServerTransaction {
 
             private Dictionary<PadInt, int> copies;
+            private Dictionary<int, int> valuestobackup;
+
+            public Dictionary<int, int> Valuestobackup {
+                get { return valuestobackup; }
+                set { valuestobackup = value; }
+            }
             private int txId;
             private bool abort;
             private Stack<Lock> locksStack;
@@ -17,6 +23,7 @@ namespace PADI_DSTM {
             public ServerTransaction(int txId, PadInt Obj) {
                 this.txId = txId;
                 copies = new Dictionary<PadInt, int>();
+                valuestobackup = new Dictionary<int, int>();
                 copies.Add(Obj, Obj.Value);
                 abort = false;
                 locksStack = new Stack<Lock>();
@@ -61,6 +68,17 @@ namespace PADI_DSTM {
                     entry.Key.Value = entry.Value;
                 }
             }
+
+            public void updatetobackup() {
+
+                foreach (KeyValuePair<PadInt, int> entry in copies) {
+                    valuestobackup.Add(entry.Key.Id, entry.Key.Value);
+                }
+
+                Console.WriteLine("Cloned PadInts in the transaction. Ready to backup!");
+            }
+            
+            
             public void pushLock(Lock l) {
                 locksStack.Push(l);
             }
