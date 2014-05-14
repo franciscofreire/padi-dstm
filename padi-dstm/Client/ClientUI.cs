@@ -52,18 +52,35 @@ namespace PADI_DSTM {
             }
 
             private void txBeginButton_Click(object sender, EventArgs e) {
-                PadiDstm.TxBegin();
-                txBeginButton.Enabled = false;
+                statusTextBox.Clear();
+
+                try {
+                    PadiDstm.TxBegin();
+                    txBeginButton.Enabled = false;
+                } catch (TxException te) {
+                    statusTextBox.AppendText("Cannot start new transaction." +
+                                                "Transaction with id" + te.Tid + "is active");
+                }
             }
 
             private void txCommitButton_Click(object sender, EventArgs e) {
-                PadiDstm.TxCommit();
-                txBeginButton.Enabled = true;
+                statusTextBox.Clear();
+                try {
+                    PadiDstm.TxCommit();
+                    txBeginButton.Enabled = true;
+                } catch (TxException) {
+                    statusTextBox.AppendText("Cannot commit. No active Transaction");
+                }
             }
 
             private void txAbortButton_Click(object sender, EventArgs e) {
-                PadiDstm.TxAbort();
-                txBeginButton.Enabled = true;
+                statusTextBox.Clear();
+                try {
+                    PadiDstm.TxAbort();
+                    txBeginButton.Enabled = true;
+                } catch (TxException) {
+                    statusTextBox.AppendText("Cannot abort. No active Transaction");
+                }
             }
 
             private void failButton_Click(object sender, EventArgs e) {
@@ -84,31 +101,45 @@ namespace PADI_DSTM {
             }
 
             private void readButton_Click(object sender, EventArgs e) {
-                // falta integrar com transacções
-                String selectedItem = listBox.SelectedItem.ToString();
-                string[] parser = selectedItem.Split(':');
-                int uid = Convert.ToInt32(parser[1]);
+                statusTextBox.Clear();
+                try {
+                    // falta integrar com transacções
+                    String selectedItem = listBox.SelectedItem.ToString();
+                    string[] parser = selectedItem.Split(':');
+                    int uid = Convert.ToInt32(parser[1]);
 
-                PadInt obj = (PadInt) myObjects[uid];
-                
-                int value = obj.Read();
-                
-                //    int value = _accessedObj.Read(listBox.SelectedItem.ToString());
-                readTextBox.Text = value.ToString();
-                listBox.ClearSelected();
+                    PadInt obj = (PadInt)myObjects[uid];
+
+                    int value = obj.Read();
+
+                    //    int value = _accessedObj.Read(listBox.SelectedItem.ToString());
+                    readTextBox.Text = value.ToString();
+                    listBox.ClearSelected();
+                } catch (TxException te) {
+                    
+                    statusTextBox.AppendText("Read operation at PadInt " + te.Tid + " Failed. No active Transaction");
+
+                }
             }
 
             private void writeButton_Click(object sender, EventArgs e) {
-                // falta integrar com transacções
-                //_accessedObj.Write(Convert.ToInt32(writeTextBox.Text));
-                String selectedItem = listBox.SelectedItem.ToString();
-                string[] parser = selectedItem.Split(':');
-                int uid = Convert.ToInt32(parser[1]);
+                statusTextBox.Clear();
+                try {
+                    // falta integrar com transacções
+                    //_accessedObj.Write(Convert.ToInt32(writeTextBox.Text));
+                    String selectedItem = listBox.SelectedItem.ToString();
+                    string[] parser = selectedItem.Split(':');
+                    int uid = Convert.ToInt32(parser[1]);
 
-                PadInt obj = (PadInt)myObjects[uid];
-                obj.Write(Convert.ToInt32(writeTextBox.Text));
+                    PadInt obj = (PadInt)myObjects[uid];
+                    obj.Write(Convert.ToInt32(writeTextBox.Text));
 
-                listBox.ClearSelected();
+                    listBox.ClearSelected();
+                } catch (TxException te) {
+                    
+                    statusTextBox.AppendText("Write operation at PadInt " + te.Tid + " Failed. No active Transaction");
+
+                }
             }
 
         }
