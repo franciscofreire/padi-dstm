@@ -53,7 +53,7 @@ namespace PADI_DSTM
         IPadInt CreatePadInt(int uid);
         PadIntInfo AccessPadInt(int uid);
         int registerServer(String url);
-        void registerNewPrimaryServer( String newServerUrl, int id);
+        void registerNewPrimaryServer(String newServerUrl, int id);
         void registerClient(String url);
         String Status();
         

@@ -205,8 +205,17 @@ namespace PADI_DSTM {
                 return false;
             }
 
+            private void killProcess() {
+                Thread.Sleep(1000);
+                Process.GetCurrentProcess().Kill();
+            }
+
             public bool Fail() {
-                lock (_stateLockObj) {
+                RemotingServices.Disconnect(this);
+                Thread t = new Thread(killProcess);
+                t.Start();
+                return true;
+                /*lock (_stateLockObj) {
                     if (isFreeze) {
                         lock (SingletonCounter.Instance) {
                             SingletonCounter.Instance.incrementLockCounter();
@@ -223,7 +232,7 @@ namespace PADI_DSTM {
                     } else {
                         return false;
                     }
-                }
+                }*/
             }
 
             public bool Recover() {
@@ -571,7 +580,7 @@ namespace PADI_DSTM {
                     StopSend();
                     StopReceive();
                     StopFailSend();
-
+                    
 
                                
                     _myServer.reportFailure();
@@ -590,8 +599,10 @@ namespace PADI_DSTM {
                         StopFailSend();
                         Console.WriteLine("Failed Heartbeats not received the server is down!!!");
                         _myServer.reportFailure();
+                       
                     }
                     lastCounterValue = _myServer.PingCounter;
+                    
                     //Console.WriteLine("Last counter value = " + lastCounterValue);
                 }
 
@@ -627,6 +638,7 @@ namespace PADI_DSTM {
 
                 public void StopReceive() {
                     _tReceive.Stop();
+                  
                 }
 
                 public void StartFailSend() {
@@ -634,6 +646,7 @@ namespace PADI_DSTM {
                 }
                 public void StopFailSend() {
                     _tfailSend.Stop();
+                   
                 }
 
             }
@@ -760,6 +773,7 @@ namespace PADI_DSTM {
 
                 Console.WriteLine("---");
                 Console.ReadKey();
+              
                
                 server = null;
                 
