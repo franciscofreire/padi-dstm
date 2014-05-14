@@ -37,15 +37,14 @@ namespace PADI_DSTM {
                 this.lockType = LockType.SHARED;
                 holdersTxIds = new List<int>();
                 lockObject = new Object();
-                timeExpired = false;
             }
 
             public void acquire(int txId, LockType alockType) {
                 lock (lockObject) {
-                    while (hasConflictLock(txId)) {
-                        Monitor.Wait(lockObject,TimeSpan.FromSeconds(1));
-                        if (timeExpired) {
-                            timeExpired = false;
+                    while (hasConflictLock(txId,alockType)) {
+                        bool res;
+                        res = Monitor.Wait(lockObject,TimeSpan.FromSeconds(15));
+                        if (res == false) {
                             throw new TimeoutException("Timeout due to deadlock");
                         }
                     }
@@ -66,14 +65,24 @@ namespace PADI_DSTM {
                     Console.WriteLine("Releasing Tx{0} lock on {1}", txId,padIntId);
                     holdersTxIds.Remove(txId);
                     lockType = LockType.SHARED;
-                    Monitor.PulseAll(lockObject);
+                    Monitor.Pulse(lockObject);
                 }
             }
 
 
-            private bool hasConflictLock(int txId) {
-                return lockType == LockType.EXCLUSIVE &&
-                    !holdersTxIds.Contains(txId);
+            private bool hasConflictLock(int txId, LockType aLockType) {
+
+                    if (aLockType == LockType.SHARED) {
+                        return lockType == LockType.EXCLUSIVE &&
+                            !holdersTxIds.Contains(txId);
+                    } else {
+                        if (lockType == LockType.EXCLUSIVE) {
+                            return !holdersTxIds.Contains(txId);
+                        } else {
+                            return !(holdersTxIds.Count == 0 ||
+                                holdersTxIds.Contains(txId));
+                        }
+                    }
             }
         }
 

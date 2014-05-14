@@ -57,9 +57,11 @@ namespace PADI_DSTM {
                 Console.WriteLine("[Write] Tx{0} is Trying to acquire lock for PadInt {1}",
                 txId, id);
 
-                
-                myServer.lockManager.setLock(this.id, txId, LockType.EXCLUSIVE);
-                
+                try {
+                    myServer.lockManager.setLock(this.id, txId, LockType.EXCLUSIVE);
+                } catch (TimeoutException toe) {
+                    throw new TxException(txId, toe.Msg);
+                }
                 // to do in abort case
                 //myServer.MasterServer.TxAbort(txId);
                 //throw new TxException(txId, "Transaction abort on write due to Deadlock");
@@ -106,8 +108,12 @@ namespace PADI_DSTM {
 
                 Console.WriteLine("[Read] Tx{0} is Trying to acquire lock for PadInt {1}",
                 txId, id);
-                
-                myServer.lockManager.setLock(this.id, txId, LockType.SHARED);
+
+                try {
+                    myServer.lockManager.setLock(this.id, txId, LockType.SHARED);
+                } catch (TimeoutException toe) {
+                    throw new TxException(txId, toe.Msg);
+                }
 
                 Console.WriteLine("[Read] Tx{0} Acquired lock for PadInt {1}",
                     txId, id);
