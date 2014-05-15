@@ -26,8 +26,9 @@ class SampleApp {
         // The following 3 lines assume we have 2 servers: one at port 2001 and another at port 2002
         res = PadiDstm.Freeze("tcp://localhost:2001/Server");
         res = PadiDstm.Recover("tcp://localhost:2001/Server");
-        res = PadiDstm.Fail("tcp://localhost:2002/Server");
+        //res = PadiDstm.Fail("tcp://localhost:2003/Server"); // mudei para 2003 porque no 2002 ta o backup do 2001
         res = PadiDstm.TxCommit();
+        
     }
      
 }

@@ -42,8 +42,10 @@ namespace PADI_DSTM {
                 int id = Convert.ToInt32(accessTextBox.Text);
                 _createdObj = PadiDstm.AccessPadInt(id);
                 if (!(_createdObj == null)) {
-                    myObjects.Add(id, _createdObj);
-                    listBox.Items.Add("Id:" + id);
+                    if (!myObjects.Contains(id)) {
+                        myObjects.Add(id, _createdObj);
+                        listBox.Items.Add("Id:" + id);
+                    }
                 } else {
                     MessageBox.Show("PadInt with id " +id+ " does not exists!",
                         "AccessPadInt",
@@ -117,7 +119,7 @@ namespace PADI_DSTM {
                     listBox.ClearSelected();
                 } catch (TxException te) {
                     
-                    statusTextBox.AppendText("Read operation at PadInt " + te.Tid + " Failed. No active Transaction");
+                    statusTextBox.AppendText("[!READ] Tid: " + te.Tid + " | Reason: " + te.Msg );
 
                 }
             }
@@ -136,8 +138,8 @@ namespace PADI_DSTM {
 
                     listBox.ClearSelected();
                 } catch (TxException te) {
-                    
-                    statusTextBox.AppendText("Write operation at PadInt " + te.Tid + " Failed. No active Transaction");
+
+                    statusTextBox.AppendText("[!WRITE] Tid: " + te.Tid + " | Reason: " + te.Msg);
 
                 }
             }

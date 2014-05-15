@@ -436,7 +436,7 @@ namespace PADI_DSTM {
             public void receiveHeartBeat(String type) {                
                if (type.Equals("ping")) {
                    incrementCounter();
-                   Console.WriteLine("Received Ping " + PingCounter + " " + type);    
+                   //Console.WriteLine("Received Ping " + PingCounter + " " + type);    
                }
             }
 
@@ -592,7 +592,7 @@ namespace PADI_DSTM {
                     _otherServer = server;
                 }
                 private void Receive(object source, ElapsedEventArgs e) {
-                    //Console.WriteLine("[Receive]: Counter = "+ _myServer.PingCounter);
+                   // Console.WriteLine("[Receive]: Counter = "+ _myServer.PingCounter);
                     if (lastCounterValue == _myServer.PingCounter) {
                         StopSend();
                         StopReceive();
@@ -607,7 +607,7 @@ namespace PADI_DSTM {
                 }
 
                 private void SendPing(object source, ElapsedEventArgs e) {
-                    Console.WriteLine("Sending Ping");
+                    //Console.WriteLine("Sending Ping");
                     try {
                         _otherServer.receiveHeartBeat("ping");
                     } catch (RemotingException) {
