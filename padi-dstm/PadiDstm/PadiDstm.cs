@@ -109,6 +109,10 @@ namespace PADI_DSTM {
             } catch (TxException e) {
                 Console.WriteLine("Transaction with id " + e.Tid + " cannot be commited.");
                 return false;
+            } catch (OperationException e) {
+                Console.WriteLine(e.Msg);
+                txId = -1;
+                throw new OperationException(e.Msg);
             }
         }
 

@@ -54,34 +54,40 @@ namespace PADI_DSTM {
             }
 
             private void txBeginButton_Click(object sender, EventArgs e) {
-                statusTextBox.Clear();
+                //statusTextBox.Clear();
 
                 try {
                     PadiDstm.TxBegin();
                     txBeginButton.Enabled = false;
                 } catch (TxException te) {
                     statusTextBox.AppendText("Cannot start new transaction." +
-                                                "Transaction with id" + te.Tid + "is active");
+                                                "Transaction with id" + te.Tid + "is active.\r\n");
                 }
             }
 
             private void txCommitButton_Click(object sender, EventArgs e) {
-                statusTextBox.Clear();
+                //statusTextBox.Clear();
+                
                 try {
                     PadiDstm.TxCommit();
                     txBeginButton.Enabled = true;
                 } catch (TxException) {
-                    statusTextBox.AppendText("Cannot commit. No active Transaction");
+                    statusTextBox.AppendText("Cannot commit. No active Transaction.\r\n");
+                } catch (OperationException oe) {
+                    statusTextBox.AppendText(oe.Msg + "\r\n");
+                    txBeginButton.Enabled = true;
                 }
             }
 
             private void txAbortButton_Click(object sender, EventArgs e) {
-                statusTextBox.Clear();
+                //statusTextBox.Clear();
+                
                 try {
                     PadiDstm.TxAbort();
                     txBeginButton.Enabled = true;
                 } catch (TxException) {
-                    statusTextBox.AppendText("Cannot abort. No active Transaction");
+                    statusTextBox.AppendText("Cannot abort. No active Transaction.\r\n");
+
                 }
             }
 
@@ -103,7 +109,8 @@ namespace PADI_DSTM {
             }
 
             private void readButton_Click(object sender, EventArgs e) {
-                statusTextBox.Clear();
+                //statusTextBox.Clear();
+                
                 try {
                     // falta integrar com transacções
                     String selectedItem = listBox.SelectedItem.ToString();
@@ -119,13 +126,14 @@ namespace PADI_DSTM {
                     listBox.ClearSelected();
                 } catch (TxException te) {
                     
-                    statusTextBox.AppendText("[!READ] Tid: " + te.Tid + " | Reason: " + te.Msg );
+                    statusTextBox.AppendText("Cannot Read, transaction " + te.Tid + " . Reason: " + te.Msg + ".\r\n" );
 
                 }
             }
 
             private void writeButton_Click(object sender, EventArgs e) {
-                statusTextBox.Clear();
+                //statusTextBox.Clear();
+                
                 try {
                     // falta integrar com transacções
                     //_accessedObj.Write(Convert.ToInt32(writeTextBox.Text));
@@ -139,7 +147,7 @@ namespace PADI_DSTM {
                     listBox.ClearSelected();
                 } catch (TxException te) {
 
-                    statusTextBox.AppendText("[!WRITE] Tid: " + te.Tid + " | Reason: " + te.Msg);
+                    statusTextBox.AppendText("Cannot Write, transaction " + te.Tid + " | Reason: " + te.Msg);
 
                 }
             }

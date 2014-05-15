@@ -432,6 +432,9 @@ namespace PADI_DSTM {
 
             public bool TxCommit(int txId) {
 
+                int faulty = 0;
+                
+
                 // Auxiliar ArrayList to save the DataServer to whom we successfully issued the canCommit
                 ArrayList pServers = new ArrayList();
 
@@ -441,85 +444,174 @@ namespace PADI_DSTM {
                     throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
                 }
 
-                lock (this) {
-                    MyTransaction t = (MyTransaction)clientTransactions[txId];
-                    _myCommitDecision = true;
+                try { // r
 
-                    foreach (DataServerInfo p in t.Participants) {
+                    lock (this) {
 
-                        // Tenta obter o canCommit 3 vezes
-                        // se numa delas conseguir, adiciona este server ao ArrayList auxiliar e prossegue
-                        // cc, lança excepção (e não é adicionado ao AL)
+                        MyTransaction t = (MyTransaction)clientTransactions[txId];
+                        _myCommitDecision = true;
 
-                        //for (int i = 0; i < 3; ++i) {
-                        int i = 0;
-                        while (i < 3 /*&& flag*/) {
-                            try {
-                                _myCommitDecision = _myCommitDecision && p.remoteServer.canCommit(t.TxId);
-                                pServers.Add(p);
-                                break;
+                        for (int i = 0 ; i < t.Participants.Count; ++i){
+                            faulty = i;
+                        //foreach (DataServerInfo p in t.Participants) {
+                            // Tenta obter o canCommit 3 vezes
+                            // se numa delas conseguir, adiciona este server ao ArrayList auxiliar e prossegue
+                            // cc, lança excepção (e não é adicionado ao AL)
 
-                            } catch (RemotingException re) {
-                                Console.WriteLine("[TxCommit]:\n" + re);
-                                i += 1;
-                                throw new TxException(txId, "TxCommit transaction with id " + txId + "failed. canCommit voting failed.");
-                            }
+                            //for (int i = 0; i < 3; ++i) {
+                            //int i = 0;
+                            // while (i < 3 /*&& flag*/) {
+                            //try {
+                            
+                            //_myCommitDecision = _myCommitDecision && p.remoteServer.canCommit(t.TxId);
+                            //pServers.Add(p);
 
-                        }
-                    }
-                    // Compara o tamanho dos arrays para saber se foi possivel fazer o canCommit a todos
-                    // se não for igual, aos que fizeram canCommit manda agora abortar e retorna false
-                    if (pServers.Count != t.Participants.Count) {
-                        foreach (DataServerInfo pt in pServers) {
-                            pt.remoteServer.doAbort(txId);
-                        }
-                        return false;
-                    }
 
-                    if (_myCommitDecision) {
-                        Console.WriteLine("[TxCommit] Every Server voted Yes");
-                        // try to commit infinite times
-                        foreach (DataServerInfo p in t.Participants) {
-                            while (true) {
-                                try {
-                                    p.remoteServer.doCommit(t.TxId);
-                                    break;
+                            DataServerInfo ds = (DataServerInfo)t.Participants[i];
+                            _myCommitDecision = _myCommitDecision && ds.remoteServer.canCommit(t.TxId);
+                            pServers.Add(t.Participants[i]);
+                            
+
+                            //  break;
+
+                            /*
                                 } catch (RemotingException re) {
                                     Console.WriteLine("[TxCommit]:\n" + re);
-                                    throw new TxException(txId, "TxCommit transaction with id " + txId + "failed. doCommit failed.");
+                                    i += 1;
+                                    throw new TxException(txId, "TxCommit transaction with id " + txId + "failed. canCommit voting failed.");
+                                } catch (Exception) {
+                                    Console.WriteLine("TxCommit can not complete. One participant DataServer is failed.");
+                                    Console.WriteLine("The faulty DataServer will be removed from the participants of the Transaction.");
+                                    Console.WriteLine("The current transaction will be aborted!");
+                                    t.Participants.Remove(p);
+                                    TxAbort(txId);
+
+                                    throw new OperationException("TxCommit can not be executed. Server does not respond. This transaction was automatically aborted!");
+                                    } */
+                            //     }
+                        }
+
+
+                        // Compara o tamanho dos arrays para saber se foi possivel fazer o canCommit a todos
+                        // se não for igual, aos que fizeram canCommit manda agora abortar e retorna false
+                        if (pServers.Count != t.Participants.Count) {
+                            foreach (DataServerInfo pt in pServers) {
+                                pt.remoteServer.doAbort(txId);
+                            }
+                            return false;
+                        }
+
+                        if (_myCommitDecision) {
+                            Console.WriteLine("[TxCommit] Every Server voted Yes");
+                            // try to commit infinite times
+                            foreach (DataServerInfo p in t.Participants) {
+                                while (true) {
+                                    //   try {
+                                    p.remoteServer.doCommit(t.TxId);
+                                    break;
+                                    /*   } catch (RemotingException re) {
+                                           Console.WriteLine("[TxCommit]:\n" + re);
+                                           throw new TxException(txId, "TxCommit transaction with id " + txId + "failed. doCommit failed.");
+                                       } */
                                 }
                             }
+                        } else {
+                            Console.WriteLine("[TxCommit] Some Server voted No.");
+                            _myCommitDecision = false;
+                            TxAbort(txId);
                         }
-                    } else {
-                        Console.WriteLine("[TxCommit] Some Server voted No.");
-                        _myCommitDecision = false;
-                        TxAbort(txId);
                     }
+                    Console.WriteLine("---");
+                    return true;
+                } catch (RemotingException re) {
+                    Console.WriteLine("[TxCommit]:\n" + re);
+                    //i += 1;
+                    throw new TxException(txId, "TxCommit transaction with id " + txId + "failed. canCommit voting failed.");
+                } catch (Exception) {
+                    Console.WriteLine("TxCommit can not complete. One participant DataServer is failed.");
+                    Console.WriteLine("The faulty DataServer will be removed from the participants of the Transaction.");
+                    Console.WriteLine("The current transaction will be aborted!");
+                    MyTransaction t = (MyTransaction)clientTransactions[txId];
+                    t.Participants.RemoveAt(faulty);
+                    //t.Participants.Remove(p);
+                    
+                    TxAbort(txId);
+
+                    throw new OperationException("TxCommit can not be executed. Server does not respond. This transaction was automatically aborted!");
                 }
-                Console.WriteLine("---");
-                return true;
             }
+
+
+
+
 
             public bool TxAbort(int txId) {
-                try {
-                    Console.WriteLine("[TxAbort] Request.");
-                    if (!clientTransactions.ContainsKey(txId)) {
-                        throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
-                    }
-                    lock (this) {
-                        MyTransaction t = (MyTransaction)clientTransactions[txId];
+                int faulty = 0;
 
-                        foreach (DataServerInfo p in t.Participants) {
-                            p.remoteServer.doAbort(t.TxId);
+               // try {
+                    lock (this) {
+                                       
+                        Console.WriteLine("[TxAbort] Request.");
+                            
+                        if (!clientTransactions.ContainsKey(txId)) {
+                                throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
                         }
+                    // try {
+                            //lock (this) {
+                                 MyTransaction t = (MyTransaction)clientTransactions[txId];
+
+                        for (int i = 0; i < t.Participants.Count ; ++i){
+                                //foreach (DataServerInfo p in t.Participants) {
+                                    //p.remoteServer.doAbort(t.TxId);
+                            try {
+                                faulty = i;
+                                DataServerInfo ds = (DataServerInfo) t.Participants[i];
+                                ds.remoteServer.doAbort(t.TxId);
+                            } catch (RemotingException re) {
+                                Console.WriteLine("[TxAbort]:\n" + re);
+                                throw new TxException(txId, "TxAbort transaction with id " + txId + "failed.");
+                            } catch (Exception) {
+                                    //Console.WriteLine("TxAbort can not complete. One participant DataServer is failed.");
+                                    //Console.WriteLine("The faulty DataServer will be removed from the participants of the Transaction.");
+                                    //Console.WriteLine("The current transaction will be aborted on the remaining DataServers!");
+                                //MyTransaction t = (MyTransaction)clientTransactions[txId];
+                                    //t.Participants.RemoveAt(faulty);
+                    //TxAbort(txId);
+                    //t.Participants.Remove(p);
+                    //TxAbort(txId);
+
+                                    //throw new OperationException("TxAbort can not be executed. Server does not respond. This transaction was automatically aborted on the remaining servers!");
+
+                }
+                        }
+                            //}
+                
+                    
+                    
+                    Console.WriteLine("---");
+                return true;
+
                     }
-                } catch (RemotingException re) {
+                }
+            /*catch (RemotingException re) {
                     Console.WriteLine("[TxAbort]:\n" + re);
                     throw new TxException(txId, "TxAbort transaction with id " + txId + "failed.");
+                } catch (Exception) {
+                    Console.WriteLine("TxAbort can not complete. One participant DataServer is failed.");
+                    Console.WriteLine("The faulty DataServer will be removed from the participants of the Transaction.");
+                    Console.WriteLine("The current transaction will be aborted on the remaining DataServers!");
+                    MyTransaction t = (MyTransaction)clientTransactions[txId];
+                    t.Participants.RemoveAt(faulty);
+                    TxAbort(txId);
+                    //t.Participants.Remove(p);
+                    //TxAbort(txId);
+
+                    throw new OperationException("TxAbort can not be executed. Server does not respond. This transaction was automatically aborted on the remaining servers!");
+
                 }
-                Console.WriteLine("---");
-                return true;
             }
+                */
+           // }
 
             public bool getDecision(int txId) {
                 Console.WriteLine("[getDecision] Server Request.");
