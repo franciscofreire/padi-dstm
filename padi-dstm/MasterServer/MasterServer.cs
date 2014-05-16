@@ -14,8 +14,13 @@ namespace PADI_DSTM {
 
     namespace MasterServer {
 
+        /** Class to store a transaction information
+         * - Transaction ID
+         * - Client that owns it
+         * - Participant Data Servers
+         * */
         public class MyTransaction {
-            // Transaction Info
+            
             private int txId;
             private ArrayList participants;
             private String client;
@@ -39,8 +44,15 @@ namespace PADI_DSTM {
             }
         }
 
+        /* Master Class */
         class Master : MarshalByRefObject, IMasterServer {
 
+            /** Class to store a DataServer information
+             * - Remote object to the DataServer
+             * - URL of the DataServer
+             * - Name of the DataServer
+             * - ID of the DataServer
+             * */
             private class DataServerInfo {
 
                 private IDataServer _myRemoteServer;
@@ -52,6 +64,7 @@ namespace PADI_DSTM {
                     _myURL = url;
                     _myRemoteServer = remoteServer;
                     _myName = name;
+                    _id = id;
                 }
 
                 public DataServerInfo(int id) {
@@ -91,9 +104,12 @@ namespace PADI_DSTM {
                 public override int GetHashCode() {
                     return _id;
                 }
-
             }
 
+            /** Class to store a Client information
+             * - Remote object to the Client
+             * - URL of the Client
+             * */
             private class ClientInfo {
 
                 private IClient _myRemoteClient;
@@ -115,7 +131,10 @@ namespace PADI_DSTM {
                 }
             }
 
-            // Para associar PadInt com Id (usado para a cache)
+            /** Class that associates PadInts with their ID for Cache purposes
+             * - ID of the PadInt
+             * - PadInt object
+             * */
             private class MyPadInt {
                 private int uid;
                 private IPadInt padInt;
@@ -152,7 +171,6 @@ namespace PADI_DSTM {
                 }
             }
 
-
             private const int CACHE_SIZE = 20;
 
             // Hashtable with information regarding objects' location
@@ -188,7 +206,6 @@ namespace PADI_DSTM {
                 padIntsCache.Clear();
             }
 
-
             public String Status() {
                 try {
                     String text = "MasterServer Status: [OK, I never fail!].\r\n";
@@ -202,7 +219,6 @@ namespace PADI_DSTM {
                     throw new OperationException("Status operation failed.");
                 }
             }
-
 
             public bool join(int txId, String url) {
                 Console.WriteLine("[Join]: {0} is participant in Tx{1}", url, txId);
@@ -233,7 +249,7 @@ namespace PADI_DSTM {
                 }
                 padIntsCache.Add(obj);
             }
-
+            
 
             public IPadInt CreatePadInt(int uid) {
                 try {
@@ -245,17 +261,13 @@ namespace PADI_DSTM {
                             Console.WriteLine("---");
                             return null;
                         }
-
                         DataServerInfo dServer = (DataServerInfo)dataServers[indexLastServer];
                         while (dServer.remoteServer.isFail) {
                             Console.WriteLine("[CREATE] DataServer " + dServer.Name /*dServer.remoteServer.name*/ + " is set to [Fail]: Passing his turn on Round Robin");
                             indexLastServer = (indexLastServer + 1) % dataServers.Count; // salta um índice
                             dServer = (DataServerInfo)dataServers[indexLastServer];
                         }
-
                         IPadInt obj = dServer.remoteServer.store(uid);
-
-
                         // obj nao vem nunca a null porque controlámos isso nos ifs anteriores...
                         // Round Robin:
                         indexLastServer = (indexLastServer + 1) % dataServers.Count;
@@ -301,9 +313,7 @@ namespace PADI_DSTM {
                         PadIntInfo padIntInfo = new PadIntInfo(dServer.URL);
                         Console.WriteLine("[ACCESS] Returned " + dServer.Name /*dServer.remoteServer.name*/ + "'s URL, to further access PadInt " + uid + ".");
                         Console.WriteLine("---");
-
                         IPadInt padInt = dServer.remoteServer.load(uid);
-
                         MyPadInt myPadInt = new MyPadInt(uid, padInt);
                         addPadInt(myPadInt);
                         return padIntInfo;
@@ -315,11 +325,8 @@ namespace PADI_DSTM {
                 } catch (RemotingException re) {
                     Console.WriteLine("[AccessPadInt]:\n" + re);
                     throw new OperationException("AccessPadInt operation at PadInt " + uid + "failed.");
-
                 }
             }
-
-           
 
             public void registerNewPrimaryServer(String newServerUrl, int Id) {
                 Console.WriteLine(" Register New Primary Server ");
@@ -327,14 +334,12 @@ namespace PADI_DSTM {
                 startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
                 startInfo.Arguments = (Id + " " + UrlToPort(newServerUrl));
                 Process p = Process.Start(startInfo);
-                
                 Thread.Sleep(TimeSpan.FromSeconds(2));
-
                 DataServerInfo dsInfoFound = null;
                 DataServerInfo dsInfoOld = new DataServerInfo(Id);
 
                 foreach (DataServerInfo ds in dataServers) {
-                    if (ds.Equals(dsInfoOld))
+                     if (ds.Equals(dsInfoOld))
                         dsInfoFound = ds;
                 }
                 if (dsInfoFound == null) {
@@ -345,13 +350,19 @@ namespace PADI_DSTM {
                     //Creating DataServer Reference
                     IDataServer remoteServerRef = (IDataServer)Activator.GetObject(typeof(IDataServer), newServerUrl);
                     dsInfoFound.remoteServer = remoteServerRef;
+                    dsInfoFound.URL = remoteServerRef.URL;
                     dsInfoFound.Name = remoteServerRef.name;    // <----- Atenção aqui (RTT), ha alternativa?
                 } catch (RemotingException re) {
                     Console.WriteLine("[registerNewPrimaryServer]:\n" + re);
                     return;
                 }
+                this.clearCache();
                 Console.WriteLine("[registerNewPrimaryServer]: Operation Succeed!\n");
             }
+
+
+
+
 
             private int UrlToPort(String url) {
                 String[] aux = url.Split(':');
@@ -371,27 +382,23 @@ namespace PADI_DSTM {
                 // obter referencia remota e registar servidor
                 String[] aux = url.Split(':');
                 String[] aux2 = aux[2].Split('/');
-
                 int primary = Convert.ToInt32(aux2[0]);
-
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
                 startInfo.Arguments = (primary + 1) + " " + primary;
                 Process p = Process.Start(startInfo);
-
                 try {
-                    
                     IDataServer remoteServer = (IDataServer)Activator.GetObject(typeof(IDataServer), url);
-                    DataServerInfo serverInfo = new DataServerInfo(url, remoteServer, remoteServer.name,id); // <----- Atenção aqui (RTT), ha alternativa? 
+                    //DataServerInfo serverInfo = new DataServerInfo(url, remoteServer, remoteServer.name,id); // <----- Atenção aqui (RTT), ha alternativa? 
+                    // Quero criar um DataServerInfo cujo Id seja a sua porta... não o id do master (que é sempre zero)
+                    DataServerInfo serverInfo = new DataServerInfo(url, remoteServer, remoteServer.name, primary); // <----- Atenção aqui (RTT), ha alternativa? 
                     dataServers.Add(serverInfo);
                     Console.WriteLine("Server " + serverInfo.Name /*remoteServer.name*/ + " registered.");
                     Console.WriteLine("---");
-
                     lock (this) {
                         Interlocked.Increment(ref id);
                     }
                     return id;
-
                 } catch (RemotingException re) {
                     Console.WriteLine("[registerNewServer]:\n" + re);
                     return -1;
@@ -411,9 +418,6 @@ namespace PADI_DSTM {
                 Console.WriteLine("---");
             }
 
-            /* ------------------------ 2PC ------------------------------ */
-            /*            ... E transacções ...                    */
-
             // interlocked -> ver: msdn.microsoft.com/en-us/library/dd78zt0c.aspx
             public int TxBegin(String clientUrl) {
                 int txId;
@@ -427,71 +431,26 @@ namespace PADI_DSTM {
                     Console.WriteLine("---");
                     return txId;
                 }
-
             }
 
             public bool TxCommit(int txId) {
-
                 int faulty = 0;
-                
-
                 // Auxiliar ArrayList to save the DataServer to whom we successfully issued the canCommit
                 ArrayList pServers = new ArrayList();
-
                 Console.WriteLine("[TxCommit] Client request");
-
                 if (!clientTransactions.ContainsKey(txId)) {
                     throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
                 }
-
-                try { // r
-
+                try {
                     lock (this) {
-
                         MyTransaction t = (MyTransaction)clientTransactions[txId];
                         _myCommitDecision = true;
-
                         for (int i = 0 ; i < t.Participants.Count; ++i){
                             faulty = i;
-                        //foreach (DataServerInfo p in t.Participants) {
-                            // Tenta obter o canCommit 3 vezes
-                            // se numa delas conseguir, adiciona este server ao ArrayList auxiliar e prossegue
-                            // cc, lança excepção (e não é adicionado ao AL)
-
-                            //for (int i = 0; i < 3; ++i) {
-                            //int i = 0;
-                            // while (i < 3 /*&& flag*/) {
-                            //try {
-                            
-                            //_myCommitDecision = _myCommitDecision && p.remoteServer.canCommit(t.TxId);
-                            //pServers.Add(p);
-
-
                             DataServerInfo ds = (DataServerInfo)t.Participants[i];
                             _myCommitDecision = _myCommitDecision && ds.remoteServer.canCommit(t.TxId);
                             pServers.Add(t.Participants[i]);
-                            
-
-                            //  break;
-
-                            /*
-                                } catch (RemotingException re) {
-                                    Console.WriteLine("[TxCommit]:\n" + re);
-                                    i += 1;
-                                    throw new TxException(txId, "TxCommit transaction with id " + txId + "failed. canCommit voting failed.");
-                                } catch (Exception) {
-                                    Console.WriteLine("TxCommit can not complete. One participant DataServer is failed.");
-                                    Console.WriteLine("The faulty DataServer will be removed from the participants of the Transaction.");
-                                    Console.WriteLine("The current transaction will be aborted!");
-                                    t.Participants.Remove(p);
-                                    TxAbort(txId);
-
-                                    throw new OperationException("TxCommit can not be executed. Server does not respond. This transaction was automatically aborted!");
-                                    } */
-                            //     }
                         }
-
-
                         // Compara o tamanho dos arrays para saber se foi possivel fazer o canCommit a todos
                         // se não for igual, aos que fizeram canCommit manda agora abortar e retorna false
                         if (pServers.Count != t.Participants.Count) {
@@ -500,19 +459,13 @@ namespace PADI_DSTM {
                             }
                             return false;
                         }
-
                         if (_myCommitDecision) {
                             Console.WriteLine("[TxCommit] Every Server voted Yes");
                             // try to commit infinite times
                             foreach (DataServerInfo p in t.Participants) {
                                 while (true) {
-                                    //   try {
                                     p.remoteServer.doCommit(t.TxId);
                                     break;
-                                    /*   } catch (RemotingException re) {
-                                           Console.WriteLine("[TxCommit]:\n" + re);
-                                           throw new TxException(txId, "TxCommit transaction with id " + txId + "failed. doCommit failed.");
-                                       } */
                                 }
                             }
                         } else {
@@ -525,7 +478,6 @@ namespace PADI_DSTM {
                     return true;
                 } catch (RemotingException re) {
                     Console.WriteLine("[TxCommit]:\n" + re);
-                    //i += 1;
                     throw new TxException(txId, "TxCommit transaction with id " + txId + "failed. canCommit voting failed.");
                 } catch (Exception) {
                     Console.WriteLine("TxCommit can not complete. One participant DataServer is failed.");
@@ -533,86 +485,34 @@ namespace PADI_DSTM {
                     Console.WriteLine("The current transaction will be aborted!");
                     MyTransaction t = (MyTransaction)clientTransactions[txId];
                     t.Participants.RemoveAt(faulty);
-                    //t.Participants.Remove(p);
-                    
                     TxAbort(txId);
-
                     throw new OperationException("TxCommit can not be executed. Server does not respond. This transaction was automatically aborted!");
                 }
             }
 
-
-
-
-
             public bool TxAbort(int txId) {
-                int faulty = 0;
-
-               // try {
-                    lock (this) {
-                                       
-                        Console.WriteLine("[TxAbort] Request.");
-                            
-                        if (!clientTransactions.ContainsKey(txId)) {
-                                throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
-                        }
-                    // try {
-                            //lock (this) {
-                                 MyTransaction t = (MyTransaction)clientTransactions[txId];
-
-                        for (int i = 0; i < t.Participants.Count ; ++i){
-                                //foreach (DataServerInfo p in t.Participants) {
-                                    //p.remoteServer.doAbort(t.TxId);
-                            try {
-                                faulty = i;
-                                DataServerInfo ds = (DataServerInfo) t.Participants[i];
-                                ds.remoteServer.doAbort(t.TxId);
-                            } catch (RemotingException re) {
-                                Console.WriteLine("[TxAbort]:\n" + re);
-                                throw new TxException(txId, "TxAbort transaction with id " + txId + "failed.");
-                            } catch (Exception) {
-                                    //Console.WriteLine("TxAbort can not complete. One participant DataServer is failed.");
-                                    //Console.WriteLine("The faulty DataServer will be removed from the participants of the Transaction.");
-                                    //Console.WriteLine("The current transaction will be aborted on the remaining DataServers!");
-                                //MyTransaction t = (MyTransaction)clientTransactions[txId];
-                                    //t.Participants.RemoveAt(faulty);
-                    //TxAbort(txId);
-                    //t.Participants.Remove(p);
-                    //TxAbort(txId);
-
-                                    //throw new OperationException("TxAbort can not be executed. Server does not respond. This transaction was automatically aborted on the remaining servers!");
-
-                }
-                        }
-                            //}
-                
-                    
-                    
-                    Console.WriteLine("---");
-                return true;
-
+                lock (this) {
+                    Console.WriteLine("[TxAbort] Request.");
+                    if (!clientTransactions.ContainsKey(txId)) {
+                        throw new TxException(txId, "Transaction with id " + txId + "does not exists!");
                     }
-                }
-            /*catch (RemotingException re) {
-                    Console.WriteLine("[TxAbort]:\n" + re);
-                    throw new TxException(txId, "TxAbort transaction with id " + txId + "failed.");
-                } catch (Exception) {
-                    Console.WriteLine("TxAbort can not complete. One participant DataServer is failed.");
-                    Console.WriteLine("The faulty DataServer will be removed from the participants of the Transaction.");
-                    Console.WriteLine("The current transaction will be aborted on the remaining DataServers!");
                     MyTransaction t = (MyTransaction)clientTransactions[txId];
-                    t.Participants.RemoveAt(faulty);
-                    TxAbort(txId);
-                    //t.Participants.Remove(p);
-                    //TxAbort(txId);
-
-                    throw new OperationException("TxAbort can not be executed. Server does not respond. This transaction was automatically aborted on the remaining servers!");
-
+    
+                    foreach (DataServerInfo p in t.Participants) {
+                        try {
+                            p.remoteServer.doAbort(t.TxId);
+                        } catch (RemotingException re) {
+                            Console.WriteLine("[TxAbort]:\n" + re);
+                            throw new TxException(txId, "TxAbort transaction with id " + txId + "failed.");
+                        } catch (Exception) {
+                            //Console.WriteLine("TxAbort had one participant DataServer failed. Aborting the remaining...");
+                        }
+                    }
+                    Console.WriteLine("---");
+                    return true;
                 }
             }
-                */
-           // }
-
+ 
             public bool getDecision(int txId) {
                 Console.WriteLine("[getDecision] Server Request.");
                 Console.WriteLine("---");
@@ -622,17 +522,15 @@ namespace PADI_DSTM {
             public override object InitializeLifetimeService() {
                 return null;
             }
+
         }
         
         class Program {
             static void Main(string[] args) {
                 TcpChannel channel = new TcpChannel(9999);
                 ChannelServices.RegisterChannel(channel, false);
-
                 Master master = new Master();
-
                 RemotingServices.Marshal(master, "MasterServer", typeof(IMasterServer));
-
                 System.Console.WriteLine("Started Master Server...");
                 Console.WriteLine("---");
                 System.Console.ReadKey();

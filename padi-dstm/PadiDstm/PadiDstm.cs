@@ -25,6 +25,13 @@ namespace PADI_DSTM {
             this.remoteObj = remoteObj;
         }
 
+        public IPadInt Remote {
+            get {
+                return remoteObj;
+            }
+        }
+
+
         public int Read() {
             if (PadiDstm.txId == -1) {
                 throw new TxException(uid, "Read operation at PadInt " +
@@ -153,6 +160,7 @@ namespace PADI_DSTM {
             try {
                 IPadInt padIntObj;
                 PadIntInfo obj = masterServer.AccessPadInt(uid);
+
                 if (obj == null) {
                     return null;
                 }

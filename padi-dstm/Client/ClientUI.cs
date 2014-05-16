@@ -13,8 +13,6 @@ namespace PADI_DSTM {
     namespace Client {
         public partial class Form1 : Form {
 
-            //private PadiDstm _lib;
-
             //associates uid's with PadInt objects
             private Hashtable myObjects = new Hashtable();
            
@@ -26,16 +24,12 @@ namespace PADI_DSTM {
             }
 
             private void initButton_Click(object sender, EventArgs e) {
-                //String url = "tcp://localhost:" + portTextBox.Text + "/" + nameTextBox.Text;
-                //_lib.Init();
                 PadiDstm.Init();
                 initButton.Enabled = false;
             }
 
             private void createButton_Click(object sender, EventArgs e) {
                 _createdObj = PadiDstm.CreatePadInt(Convert.ToInt32(createTextBox.Text));
-                //_accessedObj = _lib.CreatePadInt(Convert.ToInt32(createTextBox.Text)); 
-            
             }
 
             private void accessButton_Click(object sender, EventArgs e) {
@@ -55,7 +49,6 @@ namespace PADI_DSTM {
 
             private void txBeginButton_Click(object sender, EventArgs e) {
                 //statusTextBox.Clear();
-
                 try {
                     PadiDstm.TxBegin();
                     txBeginButton.Enabled = false;
@@ -67,7 +60,6 @@ namespace PADI_DSTM {
 
             private void txCommitButton_Click(object sender, EventArgs e) {
                 //statusTextBox.Clear();
-                
                 try {
                     PadiDstm.TxCommit();
                     txBeginButton.Enabled = true;
@@ -81,17 +73,32 @@ namespace PADI_DSTM {
 
             private void txAbortButton_Click(object sender, EventArgs e) {
                 //statusTextBox.Clear();
-                
                 try {
                     PadiDstm.TxAbort();
                     txBeginButton.Enabled = true;
                 } catch (TxException) {
                     statusTextBox.AppendText("Cannot abort. No active Transaction.\r\n");
-
                 }
             }
 
             private void failButton_Click(object sender, EventArgs e) {
+
+                ArrayList aux = new ArrayList();
+
+                // Vai haver um fail, vou eliminar os objectos deste server do myObjects e da minha listBox
+                // porque nao se consegue actualizar as referencias para o server velho aqui :(
+                foreach (DictionaryEntry pair in myObjects){
+                    PadInt p = (PadInt)pair.Value;
+                    int pIndex = (int)pair.Key;
+                    int res = String.Compare(p.Remote.Server, failTextBox.Text.ToString());
+                    if (res == 0){
+                        aux.Add(pIndex);
+                    }
+                 }
+                    foreach (int x in aux) {
+                        myObjects.Remove(x);
+                        listBox.Items.RemoveAt(x-1);
+                    }
                 PadiDstm.Fail(failTextBox.Text.ToString());
             }
 
@@ -110,46 +117,36 @@ namespace PADI_DSTM {
 
             private void readButton_Click(object sender, EventArgs e) {
                 //statusTextBox.Clear();
-                
                 try {
-                    // falta integrar com transacções
                     String selectedItem = listBox.SelectedItem.ToString();
                     string[] parser = selectedItem.Split(':');
                     int uid = Convert.ToInt32(parser[1]);
-
                     PadInt obj = (PadInt)myObjects[uid];
 
+                    // NOSSO BUG:
+                    // O server no myObjects nao é actualizado
+                    //statusTextBox.AppendText(obj.Remote.Server.ToString()); // rebenta
+  
                     int value = obj.Read();
-
-                    //    int value = _accessedObj.Read(listBox.SelectedItem.ToString());
                     readTextBox.Text = value.ToString();
                     listBox.ClearSelected();
                 } catch (TxException te) {
-                    
                     statusTextBox.AppendText("Cannot Read, transaction " + te.Tid + " . Reason: " + te.Msg + ".\r\n" );
-
                 }
             }
 
             private void writeButton_Click(object sender, EventArgs e) {
                 //statusTextBox.Clear();
-                
                 try {
-                    // falta integrar com transacções
-                    //_accessedObj.Write(Convert.ToInt32(writeTextBox.Text));
                     String selectedItem = listBox.SelectedItem.ToString();
                     string[] parser = selectedItem.Split(':');
                     int uid = Convert.ToInt32(parser[1]);
-
                     PadInt obj = (PadInt)myObjects[uid];
                     obj.Write(Convert.ToInt32(writeTextBox.Text));
-
                     listBox.ClearSelected();
                 } catch (TxException te) {
-
                     statusTextBox.AppendText("Cannot Write, transaction " + te.Tid + " | Reason: " + te.Msg);
-
-                }
+               }
             }
 
         }

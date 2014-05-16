@@ -26,7 +26,11 @@ namespace PADI_DSTM {
                 set { this.value = value; }
             }
 
-           
+            public String Server {
+                get {
+                    return myServer.URL;
+                }
+            }
 
             public PadInt(int id, Server srv) {
                 this.myServer = srv;
@@ -37,6 +41,7 @@ namespace PADI_DSTM {
             public void changeServer(Server srv) {
                 this.myServer = srv;
             }
+
             public void Write(int txId, int value) {
                 lock (myServer.StateLockObj) {
                     if (myServer.isFail) {

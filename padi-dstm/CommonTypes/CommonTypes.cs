@@ -13,6 +13,10 @@ namespace PADI_DSTM
     public interface IPadInt {
         int Read(int txId);
         void Write(int txId, int value);
+
+        String Server {
+            get;
+        }
     }
 
     [Serializable]
@@ -58,7 +62,6 @@ namespace PADI_DSTM
         void registerNewPrimaryServer(String newServerUrl, int id);
         void registerClient(String url);
         String Status();
-        
         int TxBegin(String clientUrl);
         bool TxAbort(int txId);
         bool TxCommit(int txId);
@@ -71,6 +74,7 @@ namespace PADI_DSTM
         IPadInt store(int uid);
         IPadInt load(int uid);
         String name{ get; set;}
+        String URL { get; set;}
         bool Fail();
         bool Freeze();
         bool Recover();
@@ -85,7 +89,7 @@ namespace PADI_DSTM
         bool doAbort(int txId);
         bool haveCommited(int txId);
         void receiveHeartBeat(String type);
-    }
+   }
 
     public interface IClient {
 
