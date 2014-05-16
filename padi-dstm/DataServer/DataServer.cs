@@ -321,7 +321,10 @@ namespace PADI_DSTM {
                 Process p = Process.Start(startInfo);
                 */
                 //Thread.Sleep(TimeSpan.FromSeconds(2));
-
+                foreach (DictionaryEntry pair in PadInts) {                                  
+                    PadInt b = (PadInt)pair.Value;
+                    b.changeServer(this);                 
+                }
                 _masterServer.registerNewPrimaryServer(_url, _Id);
                 // lança no master;
                 _isPrimary = true;

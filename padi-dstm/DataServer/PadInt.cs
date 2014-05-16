@@ -34,6 +34,9 @@ namespace PADI_DSTM {
                 this.value = 0;
             }
 
+            public void changeServer(Server srv) {
+                this.myServer = srv;
+            }
             public void Write(int txId, int value) {
                 lock (myServer.StateLockObj) {
                     if (myServer.isFail) {
