@@ -50,6 +50,7 @@ namespace PADI_DSTM {
 
         public class Server : MarshalByRefObject, IDataServer {
 
+            private TcpChannel _channel;
             private State _state;
             private Object _stateLockObj;
             private String _name;
@@ -117,8 +118,9 @@ namespace PADI_DSTM {
                 }
             }
 
-            public Server(String name, String url, int primaryPort) {
+            public Server(TcpChannel channel, String name, String url, int primaryPort) {
                 try {
+                    _channel = channel;
                     _name = name;
                     _url = url;
                     _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
@@ -133,8 +135,9 @@ namespace PADI_DSTM {
                 }
             }
 
-            public Server(String name, String url, int primaryPort, int slavePort, int Id) {
+            public Server(TcpChannel channel,String name, String url, int primaryPort, int slavePort, int Id) {
                 try {
+                    _channel = channel;
                     _name = name;
                     _url = url;
                     _masterServer = (IMasterServer)Activator.GetObject(typeof(IMasterServer), urlMaster);
@@ -211,7 +214,10 @@ namespace PADI_DSTM {
             }
 
             public bool Fail() {
+                pingService.Fail();
+
                 RemotingServices.Disconnect(this);
+                ChannelServices.UnregisterChannel(_channel);
                 Thread t = new Thread(killProcess);
                 t.Start();
                 return true;
@@ -416,7 +422,7 @@ namespace PADI_DSTM {
                 if (_isPrimary) {
                     transaction.updatetobackup();
                     Dictionary<int, int> updates= new Dictionary<int,int>();
-                    updates=transaction.Valuestobackup;
+                    updates = transaction.Valuestobackup;
                     _slaveServer.receiveupdatefromprimary(updates,TxId);
 
                 }
@@ -433,10 +439,11 @@ namespace PADI_DSTM {
                 return Convert.ToInt32(aux2[0]);
             }
 
-            public void receiveHeartBeat(String type) {                
-               if (type.Equals("ping")) {
+            public void receiveHeartBeat(String type) {
+                  
+                if (type.Equals("ping")) {
                    incrementCounter();
-                   //Console.WriteLine("Received Ping " + PingCounter + " " + type);    
+                   Console.WriteLine("Received Ping " + PingCounter + " " + type);    
                }
             }
 
@@ -491,8 +498,9 @@ namespace PADI_DSTM {
                 Console.WriteLine("---");
                 return true;
             }
-
-            public void receiveupdatefromprimary(Dictionary<int,int> updatetobackup, int Tid){
+            
+            public void receiveupdatefromprimary(Dictionary<int, int> updatetobackup, int Tid)
+            {
                 foreach (KeyValuePair<int, int> entry in updatetobackup) {
                     if (padInts.Contains(entry.Key)) {
                         PadInt p = (PadInt) padInts[entry.Key];
@@ -576,6 +584,15 @@ namespace PADI_DSTM {
                     //receivedHeartBeat=false;
                 }
 
+                public void Fail()
+                {
+                    StopSend();
+                    StopReceive();
+                    StopFailSend();
+                    RemotingServices.Disconnect(_myServer);
+                    ChannelServices.UnregisterChannel(_myServer._channel);
+                }
+
                 private void FailSend(object sender, ElapsedEventArgs e) {
                     StopSend();
                     StopReceive();
@@ -583,7 +600,7 @@ namespace PADI_DSTM {
                     
 
                                
-                    _myServer.reportFailure();
+                
               
                     
                 }
@@ -607,8 +624,9 @@ namespace PADI_DSTM {
                 }
 
                 private void SendPing(object source, ElapsedEventArgs e) {
-                    //Console.WriteLine("Sending Ping");
+                    if (_myServer._isPrimary) { return; }         
                     try {
+                        Console.WriteLine("Trying to Send Ping");
                         _otherServer.receiveHeartBeat("ping");
                     } catch (RemotingException) {
 
@@ -616,6 +634,7 @@ namespace PADI_DSTM {
                         StopSend();
                         StopReceive();
                         _myServer.reportFailure();
+
                     }
                         
                     
@@ -627,7 +646,7 @@ namespace PADI_DSTM {
                 }
 
                 public void StopSend() {
-                
+
                     _tSend.Stop();
                    
                 }
@@ -744,7 +763,7 @@ namespace PADI_DSTM {
 
                 if (isPrimary) {
                     try {
-                        server = new Server(ServerName, url, primaryPort);
+                        server = new Server(channel, ServerName, url, primaryPort);
                     } catch (OperationException) {
                         return;
                     }
@@ -757,7 +776,7 @@ namespace PADI_DSTM {
                     Console.WriteLine("Started " + ServerName + " (Primary)...");
                 } else {
                     try {
-                        server = new Server(ServerName, url, primaryPort, port, Id);
+                        server = new Server(channel,ServerName, url, primaryPort, port, Id);
                     } catch (OperationException) {
                         return;
                     }

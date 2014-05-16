@@ -322,7 +322,7 @@ namespace PADI_DSTM {
            
 
             public void registerNewPrimaryServer(String newServerUrl, int Id) {
-
+                Console.WriteLine(" Register New Primary Server ");
                 ProcessStartInfo startInfo = new ProcessStartInfo();
                 startInfo.FileName = @"..\..\..\DataServer\bin\Debug\DataServer.exe";
                 startInfo.Arguments = (Id + " " + UrlToPort(newServerUrl));

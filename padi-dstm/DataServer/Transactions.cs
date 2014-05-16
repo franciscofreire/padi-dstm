@@ -12,7 +12,8 @@ namespace PADI_DSTM {
             private Dictionary<PadInt, int> copies;
             private Dictionary<int, int> valuestobackup;
 
-            public Dictionary<int, int> Valuestobackup {
+            public Dictionary<int, int> Valuestobackup
+            {
                 get { return valuestobackup; }
                 set { valuestobackup = value; }
             }
