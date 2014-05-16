@@ -330,18 +330,12 @@ namespace PADI_DSTM {
 
             public void receiveUpdateAll(SerializableDictionary<int, int> updatesx) {
 
-              /*  foreach (KeyValuePair<int, int> pair in updatesx) {
-
-                    
-                    Console.WriteLine("{0}={1}", pair.Key, pair.Value);
-
-                   /* updateall.Add((int)pair.Key, (int)pair.Value);*/
-
-            //}
-
-               // padInts = mypadInts;
-                Console.WriteLine("I got your Padint !");
-                      
+                foreach (KeyValuePair<int, int> pair in updatesx) {
+                    store(pair.Key);
+                    PadInt p = (PadInt) padInts[pair.Key];
+                    p.Value = pair.Value;
+                    Console.WriteLine("Updating {0}={1}", pair.Key, pair.Value);
+                }
             }
 
             public IPadInt load(int uid) {
