@@ -77,8 +77,8 @@ namespace PADI_DSTM {
 
             private const String urlMaster = "tcp://localhost:9999/MasterServer";
 
-            private Dictionary<int, ServerTransaction> transactions = 
-                new Dictionary<int, ServerTransaction>();
+            private SerializableDictionary<int, ServerTransaction> transactions = 
+                new SerializableDictionary<int, ServerTransaction>();
 
             private Hashtable padInts = new Hashtable();
 
@@ -328,8 +328,18 @@ namespace PADI_DSTM {
                 _primaryPort = 0;
             }
 
-            public void receiveUpdateAll(Hashtable mypadInts) {
-                padInts = mypadInts;
+            public void receiveUpdateAll(SerializableDictionary<int, int> updatesx) {
+
+              /*  foreach (KeyValuePair<int, int> pair in updatesx) {
+
+                    
+                    Console.WriteLine("{0}={1}", pair.Key, pair.Value);
+
+                   /* updateall.Add((int)pair.Key, (int)pair.Value);*/
+
+            //}
+
+               // padInts = mypadInts;
                 Console.WriteLine("I got your Padint !");
                       
             }
@@ -421,7 +431,7 @@ namespace PADI_DSTM {
 
                 if (_isPrimary) {
                     transaction.updatetobackup();
-                    Dictionary<int, int> updates= new Dictionary<int,int>();
+                    SerializableDictionary<int, int> updates= new SerializableDictionary<int,int>();
                     updates = transaction.Valuestobackup;
                     _slaveServer.receiveupdatefromprimary(updates,TxId);
 
@@ -499,7 +509,7 @@ namespace PADI_DSTM {
                 return true;
             }
             
-            public void receiveupdatefromprimary(Dictionary<int, int> updatetobackup, int Tid)
+            public void receiveupdatefromprimary(SerializableDictionary<int, int> updatetobackup, int Tid)
             {
                 foreach (KeyValuePair<int, int> entry in updatetobackup) {
                     if (padInts.Contains(entry.Key)) {
@@ -538,7 +548,22 @@ namespace PADI_DSTM {
                     _slaveServer = (IDataServer)Activator.GetObject(typeof(IDataServer), PortToUrl(_slavePort));
 
                     Console.WriteLine("Backup ServerAt{0} registered", slavePort);
-                    _slaveServer.receiveUpdateAll(PadInts);
+
+                    SerializableDictionary<int, int> updateall = new SerializableDictionary <int, int> ();
+
+                     foreach (DictionaryEntry pair in PadInts)
+            {
+                Console.WriteLine("{0}={1}", pair.Key, pair.Value);
+
+                int a = (int)pair.Key;
+                PadInt b = (PadInt)pair.Value;
+                int c = b.Value;                  
+                updateall.Add(a,c);
+
+            }
+
+                   
+                    _slaveServer.receiveUpdateAll(updateall);
 
                     if (_isPrimary) {
                         Console.WriteLine(" Connected with the Slave at: " + PortToUrl(_slavePort));

@@ -13,6 +13,11 @@ namespace PADI_DSTM {
         public class PadInt : MarshalByRefObject, IPadInt {
 
             private int id;
+
+            public int Id {
+                get { return id; }
+                set { id = value; }
+            }
             private int value;
             private Server myServer;
 
@@ -21,9 +26,7 @@ namespace PADI_DSTM {
                 set { this.value = value; }
             }
 
-            public int Id {
-                get { return id; }
-            }
+           
 
             public PadInt(int id, Server srv) {
                 this.myServer = srv;
@@ -55,10 +58,10 @@ namespace PADI_DSTM {
                 }
                 transaction = myServer.Transactions[txId];
                 Console.WriteLine("[Write] Tx{0} is Trying to acquire lock for PadInt {1}",
-                txId, id);
+                txId, Id);
 
                 try {
-                    myServer.lockManager.setLock(this.id, txId, LockType.EXCLUSIVE);
+                    myServer.lockManager.setLock(this.Id, txId, LockType.EXCLUSIVE);
                 } catch (TimeoutException toe) {
                     throw new TxException(txId, toe.Msg);
                 }
@@ -67,7 +70,7 @@ namespace PADI_DSTM {
                 //throw new TxException(txId, "Transaction abort on write due to Deadlock");
 
                 Console.WriteLine("[Write] Tx{0} Acquired lock for PadInt {1}",
-                    txId, id);
+                    txId, Id);
 
                 // if not yet saved, save it for future rollback
                 if (!transaction.containsPadInt(this)) {
@@ -107,16 +110,16 @@ namespace PADI_DSTM {
                 }
 
                 Console.WriteLine("[Read] Tx{0} is Trying to acquire lock for PadInt {1}",
-                txId, id);
+                txId, Id);
 
                 try {
-                    myServer.lockManager.setLock(this.id, txId, LockType.SHARED);
+                    myServer.lockManager.setLock(this.Id, txId, LockType.SHARED);
                 } catch (TimeoutException toe) {
                     throw new TxException(txId, toe.Msg);
                 }
 
                 Console.WriteLine("[Read] Tx{0} Acquired lock for PadInt {1}",
-                    txId, id);
+                    txId, Id);
 
                 return this.value;
 

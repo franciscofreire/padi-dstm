@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Transactions;
 using PADI_DSTM;
 
+
 namespace PADI_DSTM
 {
     public interface IPadInt {
@@ -66,7 +67,7 @@ namespace PADI_DSTM
     }
 
     public interface IDataServer {
-        void receiveupdatefromprimary(Dictionary<int, int> updatetobackup, int Tid);
+        void receiveupdatefromprimary(SerializableDictionary<int, int> updatetobackup, int Tid);
         IPadInt store(int uid);
         IPadInt load(int uid);
         String name{ get; set;}
@@ -77,7 +78,7 @@ namespace PADI_DSTM
         bool isFail { get; }
         bool isFreeze { get; }
         void connect(int port);
-        void receiveUpdateAll(Hashtable mypadInts);
+        void receiveUpdateAll(SerializableDictionary<int, int> mypadInts);
         //void receiveAlive();
         bool canCommit(int txId);
         bool doCommit(int txId);

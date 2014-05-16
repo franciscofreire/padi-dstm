@@ -9,10 +9,10 @@ namespace PADI_DSTM {
 
         public class ServerTransaction {
 
-            private Dictionary<PadInt, int> copies;
-            private Dictionary<int, int> valuestobackup;
+            private SerializableDictionary<PadInt, int> copies;
+            private SerializableDictionary<int, int> valuestobackup;
 
-            public Dictionary<int, int> Valuestobackup
+            public SerializableDictionary<int, int> Valuestobackup
             {
                 get { return valuestobackup; }
                 set { valuestobackup = value; }
@@ -23,8 +23,8 @@ namespace PADI_DSTM {
 
             public ServerTransaction(int txId, PadInt Obj) {
                 this.txId = txId;
-                copies = new Dictionary<PadInt, int>();
-                valuestobackup = new Dictionary<int, int>();
+                copies = new SerializableDictionary<PadInt, int>();
+                valuestobackup = new SerializableDictionary<int, int>();
                 copies.Add(Obj, Obj.Value);
                 abort = false;
                 locksStack = new Stack<Lock>();
@@ -51,7 +51,7 @@ namespace PADI_DSTM {
                 return copies[padInt];
             }
 
-            public Dictionary<PadInt, int>.KeyCollection getCopiesKeys() {
+            public SerializableDictionary<PadInt, int>.KeyCollection getCopiesKeys() {
                 return copies.Keys;
             }
 

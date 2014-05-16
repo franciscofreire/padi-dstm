@@ -45,6 +45,7 @@
     <Compile Include="OperationException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SandCDictionary.cs" />
+    <Compile Include="SerializableDictionary.cs" />
     <Compile Include="TimeoutException.cs" />
     <Compile Include="TxException.cs" />
   </ItemGroup>
